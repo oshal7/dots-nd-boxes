@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f1220" />
+  <title>Dots &amp; Boxes — Multiplayer</title>
+  <meta name="description" content="A modern, delightful digital Dots & Boxes. Play pass-and-play, vs computer, or online with a room code." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1220'/%3E%3Cg fill='%237c5cff'%3E%3Ccircle cx='9' cy='9' r='2.4'/%3E%3Ccircle cx='23' cy='9' r='2.4'/%3E%3Ccircle cx='9' cy='23' r='2.4'/%3E%3Ccircle cx='23' cy='23' r='2.4'/%3E%3C/g%3E%3Crect x='9' y='8' width='14' height='2' rx='1' fill='%2322c55e'/%3E%3Crect x='22' y='9' width='2' height='14' rx='1' fill='%23f59e0b'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- ===================== MENU ===================== -->
+  <section class="screen screen--menu active" id="screen-menu">
+    <div class="menu-card">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true">
+          <g class="brand-dots" fill="currentColor">
+            <circle cx="20" cy="20" r="6"/><circle cx="60" cy="20" r="6"/><circle cx="100" cy="20" r="6"/>
+            <circle cx="20" cy="60" r="6"/><circle cx="60" cy="60" r="6"/><circle cx="100" cy="60" r="6"/>
+            <circle cx="20" cy="100" r="6"/><circle cx="60" cy="100" r="6"/><circle cx="100" cy="100" r="6"/>
+          </g>
+          <line class="brand-line l1" x1="20" y1="20" x2="60" y2="20"/>
+          <line class="brand-line l2" x1="60" y1="20" x2="60" y2="60"/>
+          <line class="brand-line l3" x1="60" y1="60" x2="100" y2="60"/>
+          <rect class="brand-box" x="24" y="64" width="32" height="32" rx="5"/>
+        </svg>
+        <h1>Dots <span>&amp;</span> Boxes</h1>
+        <p class="tagline">Draw lines. Close boxes. Chain combos. Win.</p>
+      </div>
+      <div class="menu-actions">
+        <button class="btn btn--primary" data-mode="local">
+          <span class="btn-emoji">👥</span> Pass &amp; Play
+          <small>Two players, one device</small>
+        </button>
+        <button class="btn" data-mode="ai">
+          <span class="btn-emoji">🤖</span> Play vs Computer
+          <small>Beat the bot</small>
+        </button>
+        <button class="btn" data-mode="online">
+          <span class="btn-emoji">🌐</span> Play Online
+          <small>Share a room code</small>
+        </button>
+      </div>
+      <button class="link-btn" id="how-to-btn">How to play</button>
+    </div>
+    <button class="sound-toggle" id="sound-menu" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+  </section>
+
+  <!-- ===================== SETUP ===================== -->
+  <section class="screen screen--setup" id="screen-setup">
+    <div class="setup-card">
+      <button class="back-btn" data-back="menu">‹ Back</button>
+      <h2 id="setup-title">Game Setup</h2>
+
+      <div class="field">
+        <label>Board size</label>
+        <div class="chips" id="size-chips">
+          <button class="chip" data-dots="4">4×4 <small>9 boxes</small></button>
+          <button class="chip is-selected" data-dots="5">5×5 <small>16 boxes</small></button>
+          <button class="chip" data-dots="6">6×6 <small>25 boxes</small></button>
+          <button class="chip" data-dots="7">7×7 <small>36 boxes</small></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Turn timer</label>
+        <div class="chips" id="timer-chips">
+          <button class="chip is-selected" data-timer="0">Off</button>
+          <button class="chip" data-timer="10">10s</button>
+          <button class="chip" data-timer="15">15s</button>
+          <button class="chip" data-timer="30">30s</button>
+        </div>
+      </div>
+
+      <div class="field" id="difficulty-field" hidden>
+        <label>Computer difficulty</label>
+        <div class="chips" id="difficulty-chips">
+          <button class="chip" data-diff="easy">Easy</button>
+          <button class="chip is-selected" data-diff="medium">Medium</button>
+          <button class="chip" data-diff="hard">Hard</button>
+        </div>
+      </div>
+
+      <div class="field field--names">
+        <div class="name-input">
+          <label>Player 1</label>
+          <input id="name-p1" maxlength="14" placeholder="Player 1" />
+        </div>
+        <div class="name-input" id="name2-wrap">
+          <label id="name-p2-label">Player 2</label>
+          <input id="name-p2" maxlength="14" placeholder="Player 2" />
+        </div>
+      </div>
+
+      <button class="btn btn--primary btn--start" id="setup-start">Start Game →</button>
+    </div>
+  </section>
+
+  <!-- ===================== ONLINE LOBBY ===================== -->
+  <section class="screen screen--lobby" id="screen-lobby">
+    <div class="lobby-card">
+      <button class="back-btn" data-back="menu">‹ Back</button>
+      <div class="lobby-tabs">
+        <button class="tab is-active" data-tab="create">Create Room</button>
+        <button class="tab" data-tab="join">Join Room</button>
+      </div>
+
+      <div class="tab-pane is-active" id="pane-create">
+        <p class="lobby-hint">Pick a board and create a room, then share the code or link with a friend.</p>
+        <div class="field">
+          <label>Board size</label>
+          <div class="chips" id="online-size-chips">
+            <button class="chip" data-dots="4">4×4</button>
+            <button class="chip is-selected" data-dots="5">5×5</button>
+            <button class="chip" data-dots="6">6×6</button>
+            <button class="chip" data-dots="7">7×7</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input id="online-host-name" maxlength="14" placeholder="Host" />
+        </div>
+        <button class="btn btn--primary" id="create-room-btn">Create Room</button>
+
+        <div class="room-share" id="room-share" hidden>
+          <div class="room-code-box">
+            <span class="room-code-label">Room code</span>
+            <span class="room-code" id="room-code">— — —</span>
+          </div>
+          <div class="share-actions">
+            <button class="btn btn--ghost" id="copy-code-btn">Copy code</button>
+            <button class="btn btn--ghost" id="copy-link-btn">Copy link</button>
+          </div>
+          <div class="waiting" id="host-waiting">
+            <span class="spinner"></span> Waiting for opponent to join…
+          </div>
+          <button class="btn btn--primary" id="host-start-btn" hidden>Start Game →</button>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="pane-join">
+        <p class="lobby-hint">Enter the 6-character code your friend shared.</p>
+        <div class="field">
+          <label>Room code</label>
+          <input id="join-code" class="code-input" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters" />
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input id="online-guest-name" maxlength="14" placeholder="Guest" />
+        </div>
+        <button class="btn btn--primary" id="join-room-btn">Join Room</button>
+        <div class="waiting" id="join-waiting" hidden>
+          <span class="spinner"></span> <span id="join-status">Connecting…</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GAME ===================== -->
+  <section class="screen screen--game" id="screen-game">
+    <header class="game-top">
+      <button class="icon-btn" id="exit-btn" title="Exit game" aria-label="Exit">‹</button>
+      <span class="game-title">DOTS &amp; BOXES</span>
+      <div class="top-right">
+        <button class="icon-btn" id="sound-game" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      </div>
+    </header>
+
+    <div class="players">
+      <div class="player-card" id="card-p1">
+        <span class="player-dot"></span>
+        <div class="player-meta">
+          <span class="player-name" id="p1-name">Player 1</span>
+          <span class="player-score" id="p1-score">0</span>
+        </div>
+        <span class="active-badge">YOUR TURN</span>
+      </div>
+      <div class="vs">VS</div>
+      <div class="player-card" id="card-p2">
+        <span class="player-dot"></span>
+        <div class="player-meta">
+          <span class="player-name" id="p2-name">Player 2</span>
+          <span class="player-score" id="p2-score">0</span>
+        </div>
+        <span class="active-badge">TURN</span>
+      </div>
+    </div>
+
+    <div class="timer-wrap" id="timer-wrap" hidden>
+      <div class="timer-bar"><span id="timer-fill"></span></div>
+      <span class="timer-text" id="timer-text">15s</span>
+    </div>
+
+    <div class="board-wrap">
+      <svg class="board" id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="status-pill" id="status-pill"></div>
+    </div>
+
+    <footer class="game-bottom">
+      <div class="emotes" id="emotes">
+        <button data-emote="👏">👏</button>
+        <button data-emote="😮">😮</button>
+        <button data-emote="🔥">🔥</button>
+        <button data-emote="🏆">🏆</button>
+        <button data-emote="😅">😅</button>
+      </div>
+      <button class="share-mini" id="share-mini" hidden>Room: <b id="share-mini-code"></b></button>
+    </footer>
+
+    <!-- Overlays -->
+    <div class="countdown" id="countdown" hidden><span id="countdown-num">3</span></div>
+    <div class="net-banner" id="net-banner" hidden></div>
+    <div class="emote-float" id="emote-float"></div>
+  </section>
+
+  <!-- ===================== RESULT ===================== -->
+  <section class="screen screen--result" id="screen-result">
+    <div class="result-card">
+      <div class="trophy" id="trophy">🏆</div>
+      <h2 id="result-title">Player 1 Wins!</h2>
+      <div class="result-scores">
+        <div class="result-score" id="res-p1">
+          <span class="rs-name">Player 1</span><span class="rs-num">0</span>
+        </div>
+        <div class="result-score" id="res-p2">
+          <span class="rs-name">Player 2</span><span class="rs-num">0</span>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn--primary" id="rematch-btn">Rematch</button>
+        <button class="btn btn--ghost" id="result-menu-btn">Main Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- How-to modal -->
+  <div class="modal" id="howto-modal" hidden>
+    <div class="modal-card">
+      <h3>How to play</h3>
+      <ul>
+        <li>Players take turns drawing one line between two adjacent dots.</li>
+        <li>Complete the 4th side of a box to <b>capture it</b> (+1 point) and take a <b>bonus turn</b>.</li>
+        <li>Chain captures to rack up combos and sweep the board.</li>
+        <li>When every line is drawn, the most boxes wins. Equal scores tie.</li>
+      </ul>
+      <button class="btn btn--primary" id="howto-close">Got it</button>
+    </div>
+  </div>
+
+  <!-- Full-viewport particle + float overlays -->
+  <canvas class="fx-canvas" id="fx-canvas"></canvas>
+  <div class="float-layer" id="float-layer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
