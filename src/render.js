@@ -57,11 +57,21 @@ export class BoardView {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
 
     const defs = el('defs');
+    // Subtle "hand-drawn" wobble for the pen strokes + dots (not the hit areas,
+    // so clicks stay precise). Gives the board a pencil-on-paper character.
+    const rough = el('filter', { id: 'rough', x: '-5%', y: '-5%', width: '110%', height: '110%' });
+    rough.appendChild(el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.018', numOctaves: '2', seed: '7', result: 'noise' }));
+    rough.appendChild(el('feDisplacementMap', { in: 'SourceGraphic', in2: 'noise', scale: '1.4', xChannelSelector: 'R', yChannelSelector: 'G' }));
+    defs.appendChild(rough);
+
     const gBoxes = group('layer-boxes');
     const gTracks = group('layer-tracks');
     const gEdges = group('layer-edges');
     const gDots = group('layer-dots');
     const gHit = group('layer-hit');
+    gTracks.setAttribute('filter', 'url(#rough)');
+    gEdges.setAttribute('filter', 'url(#rough)');
+    gDots.setAttribute('filter', 'url(#rough)');
 
     const dot = (r, c) => ({ x: c * GAP + PAD, y: r * GAP + PAD });
 

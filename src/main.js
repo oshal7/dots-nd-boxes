@@ -8,7 +8,7 @@ import { sfx, unlockAudio, toggleMuted, isMuted } from './audio.js';
 import { Net, peerAvailable } from './net.js';
 
 // Up to 4 distinct player colours.
-const COLORS = { p1: '#6d8bff', p2: '#ff6d9e', p3: '#43d17a', p4: '#f5a53b' };
+const COLORS = { p1: '#2f6bd8', p2: '#e0496b', p3: '#23a06b', p4: '#e88a24' };
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 

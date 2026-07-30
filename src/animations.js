@@ -112,7 +112,7 @@ export function spark(x, y, color = '#7c5cff', count = 8) {
   }
 }
 
-const CONFETTI_COLORS = ['#7c5cff', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+const CONFETTI_COLORS = ['#2f6bd8', '#e0496b', '#23a06b', '#e88a24', '#8a5cd6', '#e0b93a'];
 
 /** Confetti burst at a point (box capture / combo). */
 export function confettiBurst(x, y, colors = CONFETTI_COLORS, count = 26) {
