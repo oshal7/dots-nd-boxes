@@ -7,24 +7,31 @@ import * as FX from './animations.js';
 import { sfx, unlockAudio, toggleMuted, isMuted } from './audio.js';
 import { Net, peerAvailable } from './net.js';
 
-const COLORS = { p1: '#6d8bff', p2: '#ff6d9e' };
+// Up to 4 distinct player colours.
+const COLORS = { p1: '#6d8bff', p2: '#ff6d9e', p3: '#43d17a', p4: '#f5a53b' };
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 // ---- app state ----------------------------------------------------------
 const S = {
-  mode: null,           // 'local' | 'ai' | 'online'
-  role: null,           // 'host' | 'guest' | null
-  game: null,           // authoritative (local/ai/host) or mirror (guest)
-  view: null,           // BoardView
+  mode: null,            // 'local' | 'ai' | 'online'
+  role: null,            // 'host' | 'guest' | null
+  game: null,            // authoritative (local/ai/host) or mirror (guest)
+  view: null,            // BoardView
   config: { dots: 5, timer: 0, difficulty: 'medium' },
-  names: { p1: 'Player 1', p2: 'Player 2' },
-  myPlayer: 'p1',       // which player id this client controls (online)
+  playerCount: 2,        // 2..4 (local only)
+  players: ['p1', 'p2'], // active player ids this game
+  names: { p1: 'Player 1', p2: 'Player 2', p3: 'Player 3', p4: 'Player 4' },
+  cardEls: {},           // id -> {card, nameEl, scoreEl}
+  myPlayer: 'p1',        // which player id this client controls (online)
   aiPlayer: 'p2',
   combo: 0,
   timerHandle: null,
   net: null,
-  busy: false,          // input lock during animations / AI
+  roomCode: null,
+  leaving: false,        // guard reconnect during intentional exit
+  reconnectTries: 0,
+  busy: false,
 };
 
 // ---- screen navigation --------------------------------------------------
@@ -32,15 +39,17 @@ function show(id) {
   $$('.screen').forEach((s) => s.classList.remove('active'));
   $('#screen-' + id).classList.add('active');
 }
+function onGameScreen() { return $('#screen-game').classList.contains('active'); }
 
 function colorFor(id) { return COLORS[id] || '#7c5cff'; }
 function markFor(id) {
   const n = S.names[id] || '';
-  return (n.trim()[0] || (id === 'p1' ? '1' : '2')).toUpperCase();
+  const k = id.replace('p', '');
+  return (n.trim()[0] || k).toUpperCase();
 }
 
 // ===================================================================
-// Setup / menu wiring
+// Menu
 // ===================================================================
 function initMenu() {
   $$('#screen-menu [data-mode]').forEach((b) =>
@@ -51,8 +60,8 @@ function initMenu() {
       openSetup(mode);
     })
   );
-  $('#how-to-btn').addEventListener('click', () => $('#howto-modal').hidden = false);
-  $('#howto-close').addEventListener('click', () => $('#howto-modal').hidden = true);
+  $('#how-to-btn').addEventListener('click', () => ($('#howto-modal').hidden = false));
+  $('#howto-close').addEventListener('click', () => ($('#howto-modal').hidden = true));
 
   const sync = () => {
     const m = isMuted();
@@ -62,7 +71,7 @@ function initMenu() {
   $('#sound-menu').addEventListener('click', () => { unlockAudio(); toggleMuted(); sync(); });
   $('#sound-game').addEventListener('click', () => { unlockAudio(); toggleMuted(); sync(); });
 
-  $$('.back-btn').forEach((b) => b.addEventListener('click', () => { sfx.click(); cleanupNet(); show(b.dataset.back); }));
+  $$('.back-btn').forEach((b) => b.addEventListener('click', () => { sfx.click(); leaveOnline(); show(b.dataset.back); }));
 }
 
 function chipGroup(container, attr, onPick) {
@@ -75,34 +84,74 @@ function chipGroup(container, attr, onPick) {
     onPick(chip.dataset[attr]);
   });
 }
-function selectedVal(container, attr) {
-  const c = container.querySelector('.chip.is-selected');
-  return c ? c.dataset[attr] : null;
-}
 
+// ===================================================================
+// Setup (local + ai)
+// ===================================================================
 function openSetup(mode) {
   S.mode = mode;
   $('#setup-title').textContent = mode === 'ai' ? 'Play vs Computer' : 'Pass & Play';
   $('#difficulty-field').hidden = mode !== 'ai';
-  $('#name-p2-label').textContent = mode === 'ai' ? 'Computer' : 'Player 2';
-  $('#name-p2').value = mode === 'ai' ? 'Computer' : '';
-  $('#name-p2').disabled = mode === 'ai';
-  $('#name2-wrap').style.opacity = mode === 'ai' ? 0.6 : 1;
+  $('#players-field').hidden = mode !== 'local';
+  if (mode === 'ai') S.playerCount = 2;
+  renderNameInputs();
   show('setup');
+}
+
+function currentNameValues() {
+  const vals = {};
+  $$('#names-fields input').forEach((inp) => { vals[inp.dataset.pid] = inp.value; });
+  return vals;
+}
+
+function renderNameInputs() {
+  const prev = currentNameValues();
+  const wrap = $('#names-fields');
+  wrap.innerHTML = '';
+  const count = S.mode === 'ai' ? 2 : S.playerCount;
+  for (let i = 0; i < count; i++) {
+    const id = 'p' + (i + 1);
+    const isBot = S.mode === 'ai' && i === 1;
+    const div = document.createElement('div');
+    div.className = 'name-input';
+    const label = document.createElement('label');
+    label.textContent = isBot ? 'Computer' : 'Player ' + (i + 1);
+    const input = document.createElement('input');
+    input.maxLength = 14;
+    input.dataset.pid = id;
+    input.placeholder = isBot ? 'Computer' : 'Player ' + (i + 1);
+    input.value = isBot ? 'Computer' : (prev[id] || '');
+    if (isBot) input.disabled = true;
+    // small colour dot to show each player's colour
+    const dot = document.createElement('span');
+    dot.className = 'name-dot';
+    dot.style.background = colorFor(id);
+    label.prepend(dot);
+    div.appendChild(label);
+    div.appendChild(input);
+    wrap.appendChild(div);
+  }
 }
 
 function initSetup() {
   chipGroup($('#size-chips'), 'dots', (v) => (S.config.dots = +v));
   chipGroup($('#timer-chips'), 'timer', (v) => (S.config.timer = +v));
   chipGroup($('#difficulty-chips'), 'diff', (v) => (S.config.difficulty = v));
+  chipGroup($('#players-chips'), 'players', (v) => { S.playerCount = +v; renderNameInputs(); });
   $('#setup-start').addEventListener('click', () => {
     sfx.click();
-    S.names.p1 = ($('#name-p1').value.trim() || 'Player 1').slice(0, 14);
-    S.names.p2 = S.mode === 'ai'
-      ? 'Computer'
-      : ($('#name-p2').value.trim() || 'Player 2').slice(0, 14);
+    const count = S.mode === 'ai' ? 2 : S.playerCount;
+    const vals = currentNameValues();
+    S.players = [];
+    for (let i = 0; i < count; i++) {
+      const id = 'p' + (i + 1);
+      S.players.push(id);
+      const isBot = S.mode === 'ai' && i === 1;
+      S.names[id] = isBot ? 'Computer' : ((vals[id] || '').trim() || 'Player ' + (i + 1)).slice(0, 14);
+    }
+    S.aiPlayer = S.mode === 'ai' ? 'p2' : null;
     S.role = null;
-    startGame();
+    startGame({ fresh: true });
   });
 }
 
@@ -111,29 +160,25 @@ function initSetup() {
 // ===================================================================
 function initLobby() {
   $$('.lobby-tabs .tab').forEach((t) =>
-    t.addEventListener('click', () => {
-      sfx.click();
-      $$('.lobby-tabs .tab').forEach((x) => x.classList.remove('is-active'));
-      $$('#screen-lobby .tab-pane').forEach((x) => x.classList.remove('is-active'));
-      t.classList.add('is-active');
-      $('#pane-' + t.dataset.tab).classList.add('is-active');
-    })
+    t.addEventListener('click', () => { sfx.click(); switchLobbyTab(t.dataset.tab); })
   );
   chipGroup($('#online-size-chips'), 'dots', (v) => (S.config.dots = +v));
   $('#create-room-btn').addEventListener('click', createRoom);
-  $('#join-room-btn').addEventListener('click', joinRoom);
-  $('#copy-code-btn').addEventListener('click', () => copyText(S.net?.code, 'Code copied!'));
-  $('#copy-link-btn').addEventListener('click', () => copyText(roomLink(S.net?.code), 'Link copied!'));
-  $('#host-start-btn').addEventListener('click', () => {
-    sfx.click();
-    S.net.send({ t: 'start', config: S.config, hostName: S.names.p1 });
-    beginOnlineGame();
-  });
+  $('#join-room-btn').addEventListener('click', () => joinRoom());
+  $('#copy-code-btn').addEventListener('click', () => copyText(S.roomCode, 'Code copied!'));
+  $('#copy-link-btn').addEventListener('click', () => copyText(roomLink(S.roomCode), 'Link copied!'));
+  $('#host-start-btn').addEventListener('click', () => { sfx.click(); onlineRestart(); });
+}
+
+function switchLobbyTab(tab) {
+  $$('.lobby-tabs .tab').forEach((x) => x.classList.toggle('is-active', x.dataset.tab === tab));
+  $$('#screen-lobby .tab-pane').forEach((x) => x.classList.remove('is-active'));
+  $('#pane-' + tab).classList.add('is-active');
 }
 
 function openLobby() {
   if (!peerAvailable()) {
-    alert('Online mode needs the PeerJS library, which failed to load (check your connection). You can still play Pass & Play and vs Computer.');
+    banner('Online needs the PeerJS library (failed to load). Pass & Play and vs Computer still work.', true);
     return;
   }
   show('lobby');
@@ -146,28 +191,24 @@ function roomLink(code) {
   return url.toString();
 }
 
+// ---- host -------------------------------------------------------------
 async function createRoom() {
   if (!peerAvailable()) return;
   sfx.click();
-  S.mode = 'online'; S.role = 'host'; S.myPlayer = 'p1';
+  leaveOnline();
+  S.mode = 'online'; S.role = 'host'; S.myPlayer = 'p1'; S.leaving = false;
+  S.players = ['p1', 'p2'];
   S.names.p1 = ($('#online-host-name').value.trim() || 'Host').slice(0, 14);
+  S.names.p2 = 'Guest';
   $('#create-room-btn').disabled = true;
   $('#create-room-btn').textContent = 'Creating…';
 
-  S.net = new Net();
-  S.net
-    .on('error', (err) => {
-      banner('Connection error: ' + (err?.type || err?.message || 'unknown'), true);
-      $('#create-room-btn').disabled = false;
-      $('#create-room-btn').textContent = 'Create Room';
-    })
-    .on('data', onHostData)
-    .on('peer', (ev) => {
-      if (ev === 'close') { $('#host-waiting').innerHTML = '⚠️ Opponent left. Waiting again…'; $('#host-start-btn').hidden = true; }
-    });
-
+  const net = new Net();
+  attachHostHandlers(net);
+  S.net = net;
   try {
-    const code = await S.net.hostRoom();
+    const code = await net.hostRoom();
+    S.roomCode = code;
     $('#room-code').textContent = code;
     $('#share-mini-code').textContent = code;
     $('#room-share').hidden = false;
@@ -179,116 +220,206 @@ async function createRoom() {
   }
 }
 
+function attachHostHandlers(net) {
+  net
+    .on('error', (err) => {
+      // Transient broker errors are non-fatal; only surface in lobby setup.
+      if (!onGameScreen() && $('#room-share').hidden) {
+        banner('Connection error: ' + (err?.type || 'unknown'), true);
+      }
+    })
+    .on('data', onHostData)
+    .on('peer', (ev) => {
+      if (ev === 'open') {
+        if (onGameScreen()) banner('Opponent reconnected ✅');
+      } else if (ev === 'close') {
+        if (onGameScreen() && !S.game.gameOver) banner('Opponent disconnected — waiting for them to return…', true);
+        else if (!onGameScreen()) { $('#host-waiting').innerHTML = '⚠️ Opponent left. Waiting again…'; $('#host-start-btn').hidden = true; }
+      }
+    });
+}
+
 function onHostData(msg) {
   if (!msg || !msg.t) return;
   if (msg.t === 'hello') {
     S.names.p2 = (msg.name || 'Guest').slice(0, 14);
-    $('#host-waiting').innerHTML = `✅ <b>${escapeHtml(S.names.p2)}</b> joined!`;
-    $('#host-start-btn').hidden = false;
-    sfx.capture();
+    if (onGameScreen() && S.game) {
+      // Late-join or reconnect: bring them straight into the current game.
+      S.net.send({ t: 'start', config: S.config, hostName: S.names.p1, guestName: S.names.p2, snapshot: S.game.snapshot() });
+    } else {
+      $('#host-waiting').innerHTML = `✅ <b>${escapeHtml(S.names.p2)}</b> joined!`;
+      $('#host-start-btn').hidden = false;
+      sfx.capture();
+    }
   } else if (msg.t === 'reqmove') {
-    // Guest requests a move — validate authoritatively.
     if (S.game && !S.game.gameOver && S.game.currentPlayer === 'p2' && S.game.canMove(msg.edgeId)) {
       commitMove(msg.edgeId, true);
     }
   } else if (msg.t === 'emote') {
     showEmote(msg.emoji);
-  } else if (msg.t === 'rematch') {
-    doRematch();
+  } else if (msg.t === 'rematch-req') {
+    onlineRestart();
   }
 }
 
-async function joinRoom() {
+// ---- guest ------------------------------------------------------------
+async function joinRoom(auto) {
   if (!peerAvailable()) return;
-  sfx.click();
-  const code = ($('#join-code').value.trim().toUpperCase());
-  if (code.length < 6) { banner('Enter the 6-character room code.', true); return; }
-  S.mode = 'online'; S.role = 'guest'; S.myPlayer = 'p2';
+  if (!auto) sfx.click();
+  const code = $('#join-code').value.trim().toUpperCase();
+  if (code.length < 6) { if (!auto) banner('Enter the 6-character room code.', true); return; }
+  leaveOnline();
+  S.mode = 'online'; S.role = 'guest'; S.myPlayer = 'p2'; S.leaving = false;
+  S.players = ['p1', 'p2'];
+  S.roomCode = code;
   S.names.p2 = ($('#online-guest-name').value.trim() || 'Guest').slice(0, 14);
   $('#join-waiting').hidden = false;
   $('#join-status').textContent = 'Connecting…';
   $('#join-room-btn').disabled = true;
 
-  S.net = new Net();
-  S.net
-    .on('error', () => { $('#join-status').textContent = 'Room not found or unavailable.'; $('#join-room-btn').disabled = false; })
-    .on('data', onGuestData)
-    .on('peer', (ev) => { if (ev === 'close') banner('Disconnected from host.', true); });
-
+  const net = new Net();
+  attachGuestHandlers(net);
+  S.net = net;
   try {
-    await S.net.joinRoom(code);
+    await net.joinRoom(code);
     $('#join-status').textContent = 'Connected! Waiting for host to start…';
-    S.net.send({ t: 'hello', name: S.names.p2 });
+    net.send({ t: 'hello', name: S.names.p2 });
   } catch (e) {
     $('#join-status').textContent = 'Could not connect. Check the code and try again.';
     $('#join-room-btn').disabled = false;
   }
 }
 
+function attachGuestHandlers(net) {
+  net
+    .on('error', () => {
+      if (!onGameScreen()) { $('#join-status').textContent = 'Room not found or unavailable.'; $('#join-room-btn').disabled = false; }
+    })
+    .on('data', onGuestData)
+    .on('peer', (ev) => {
+      if (ev === 'close' && onGameScreen() && !S.leaving && !(S.game && S.game.gameOver)) {
+        setTimeout(guestReconnect, 700);
+      }
+    });
+}
+
 function onGuestData(msg) {
   if (!msg || !msg.t) return;
   if (msg.t === 'start') {
-    S.config = msg.config;
+    S.config = msg.config || S.config;
     S.names.p1 = (msg.hostName || 'Host').slice(0, 14);
-    beginOnlineGame();
+    if (msg.guestName) S.names.p2 = msg.guestName.slice(0, 14);
+    S.reconnectTries = 0;
+    if (msg.snapshot) resumeOnlineGame(msg.snapshot);
+    else beginOnlineGame();
   } else if (msg.t === 'move') {
-    // Authoritative move from host — apply to mirror + animate.
     applyConfirmedMove(msg.edgeId);
   } else if (msg.t === 'emote') {
     showEmote(msg.emoji);
   } else if (msg.t === 'full') {
     banner('Room is full.', true);
-  } else if (msg.t === 'rematch') {
-    doRematch();
   }
+}
+
+function guestReconnect() {
+  if (S.mode !== 'online' || S.role !== 'guest' || S.leaving) return;
+  if (S.game && S.game.gameOver) return;
+  S.reconnectTries++;
+  if (S.reconnectTries > 8) { banner('Lost connection to host. Returning to menu.', true); setTimeout(() => { leaveOnline(); show('menu'); }, 1500); return; }
+  banner('Reconnecting… (' + S.reconnectTries + ')');
+  const net = new Net();
+  attachGuestHandlers(net);
+  S.net = net;
+  net.joinRoom(S.roomCode)
+    .then(() => { net.send({ t: 'hello', name: S.names.p2, resume: true }); })
+    .catch(() => setTimeout(guestReconnect, 1800));
 }
 
 function beginOnlineGame() {
   S.aiPlayer = null;
-  startGame();
+  S.players = ['p1', 'p2'];
+  startGame({ fresh: true });
+}
+
+function onlineRestart() {
+  // Host authoritative restart — tell guest, both start fresh with countdown.
+  S.net.send({ t: 'start', config: S.config, hostName: S.names.p1, guestName: S.names.p2 });
+  beginOnlineGame();
+}
+
+function resumeOnlineGame(snapshot) {
+  S.aiPlayer = null;
+  S.players = ['p1', 'p2'];
+  S.game = Game.fromSnapshot(snapshot);
+  S.combo = 0; S.busy = false;
+  ensureView();
+  S.view.mount(S.game.rows, S.game.cols);
+  S.view.syncFromGame(S.game);
+  buildPlayerCards();
+  buildTimerVisibility();
+  $('#share-mini').hidden = false;
+  $('#share-mini-code').textContent = S.roomCode || '';
+  show('game');
+  banner('Reconnected — resuming ✅');
+  if (S.game.gameOver) { endGame(S.game.winner); return; }
+  beginTurn();
 }
 
 // ===================================================================
 // Game lifecycle
 // ===================================================================
-function startGame() {
+function ensureView() {
+  if (!S.view) {
+    S.view = new BoardView($('#board'), { onEdge: onEdgeInput, colorFn: colorFor, markFn: markFor });
+  }
+}
+
+function buildPlayerCards() {
+  const wrap = $('#players');
+  wrap.innerHTML = '';
+  wrap.dataset.count = S.players.length;
+  S.cardEls = {};
+  const you = S.mode === 'online' ? S.myPlayer : null;
+  for (const id of S.players) {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    card.id = 'card-' + id;
+    card.style.setProperty('--pc', colorFor(id));
+    const dot = document.createElement('span'); dot.className = 'player-dot';
+    const meta = document.createElement('div'); meta.className = 'player-meta';
+    const nameEl = document.createElement('span'); nameEl.className = 'player-name';
+    nameEl.textContent = (S.names[id] || id) + (you === id ? ' (You)' : '');
+    const scoreEl = document.createElement('span'); scoreEl.className = 'player-score'; scoreEl.textContent = '0';
+    meta.appendChild(nameEl); meta.appendChild(scoreEl);
+    const badge = document.createElement('span'); badge.className = 'active-badge'; badge.textContent = 'TURN';
+    card.appendChild(dot); card.appendChild(meta); card.appendChild(badge);
+    wrap.appendChild(card);
+    S.cardEls[id] = { card, nameEl, scoreEl };
+  }
+}
+
+function buildTimerVisibility() {
+  $('#timer-wrap').hidden = !(S.config.timer > 0);
+}
+
+function startGame({ fresh } = {}) {
   const dots = S.config.dots;
-  S.game = new Game({ rows: dots, cols: dots, players: ['p1', 'p2'] });
+  S.game = new Game({ rows: dots, cols: dots, players: S.players.slice() });
   S.combo = 0;
   S.busy = false;
 
-  if (!S.view) {
-    S.view = new BoardView($('#board'), {
-      onEdge: onEdgeInput,
-      colorFn: colorFor,
-      markFn: markFor,
-    });
-  }
+  ensureView();
   S.view.mount(dots, dots);
   S.view.setInteractive(false);
 
-  // Player card labels
-  const you = S.mode === 'online' ? S.myPlayer : null;
-  $('#p1-name').textContent = S.names.p1 + (you === 'p1' ? ' (You)' : '');
-  $('#p2-name').textContent = S.names.p2 + (you === 'p2' ? ' (You)' : '');
-  $('#p1-score').textContent = '0';
-  $('#p2-score').textContent = '0';
-  document.documentElement.style.setProperty('--p1', COLORS.p1);
-  document.documentElement.style.setProperty('--p2', COLORS.p2);
-
-  // Online room share chip
+  buildPlayerCards();
+  buildTimerVisibility();
   $('#share-mini').hidden = S.mode !== 'online';
-  if (S.mode === 'online') $('#share-mini-code').textContent = S.net?.code || '';
-
-  // Timer visibility
-  $('#timer-wrap').hidden = !(S.config.timer > 0);
+  if (S.mode === 'online') $('#share-mini-code').textContent = S.roomCode || '';
 
   show('game');
   updateTurnUI();
-  countdown(() => {
-    S.view.setInteractive(true);
-    beginTurn();
-  });
+  countdown(() => { S.view.setInteractive(true); beginTurn(); });
 }
 
 function countdown(done) {
@@ -299,9 +430,7 @@ function countdown(done) {
   let i = 0;
   const step = () => {
     num.textContent = seq[i];
-    num.style.animation = 'none';
-    void num.offsetWidth;
-    num.style.animation = '';
+    num.style.animation = 'none'; void num.offsetWidth; num.style.animation = '';
     if (seq[i] === 'GO!') sfx.go(); else sfx.countdown();
     i++;
     if (i < seq.length) setTimeout(step, 700);
@@ -310,9 +439,8 @@ function countdown(done) {
   step();
 }
 
-// Who controls the current player's input on this client?
 function iControlCurrent() {
-  if (S.game.gameOver) return false;
+  if (!S.game || S.game.gameOver) return false;
   const cur = S.game.currentPlayer;
   if (S.mode === 'local') return true;
   if (S.mode === 'ai') return cur !== S.aiPlayer;
@@ -324,7 +452,6 @@ function beginTurn() {
   updateTurnUI();
   if (S.game.gameOver) return;
 
-  // AI turn?
   if (S.mode === 'ai' && S.game.currentPlayer === S.aiPlayer) {
     S.view.setInteractive(false);
     stopTimer();
@@ -340,7 +467,7 @@ function beginTurn() {
 
   const myTurn = iControlCurrent();
   S.view.setInteractive(myTurn);
-  startTimer(myTurn || (S.mode === 'online')); // guest also shows a visual timer
+  startTimer(myTurn);
 }
 
 function onEdgeInput(edgeId) {
@@ -349,31 +476,26 @@ function onEdgeInput(edgeId) {
   if (!iControlCurrent()) return;
 
   if (S.mode === 'online' && S.role === 'guest') {
-    // Ask the host; wait for authoritative broadcast.
-    S.net.send({ t: 'reqmove', edgeId });
+    if (!S.net || !S.net.send({ t: 'reqmove', edgeId })) banner('Not connected — reconnecting…', true);
     return;
   }
   commitMove(edgeId, true);
 }
 
-// Host/local/ai path: mutate authoritative game, animate, and broadcast.
 function commitMove(edgeId, broadcast) {
   const result = S.game.makeMove(edgeId);
   if (!result.ok) return;
-  if (broadcast && S.mode === 'online' && S.role === 'host') {
-    S.net.send({ t: 'move', edgeId });
-  }
+  if (broadcast && S.mode === 'online' && S.role === 'host') S.net.send({ t: 'move', edgeId });
   animateResult(result);
 }
 
-// Guest path: apply an already-validated move to the mirror game.
 function applyConfirmedMove(edgeId) {
   if (!S.game || !S.game.canMove(edgeId)) return;
   const result = S.game.makeMove(edgeId);
   if (result.ok) animateResult(result);
 }
 
-// ---- animate a move result + advance the loop ---------------------------
+// ---- animate a move result + advance ------------------------------------
 function animateResult(result) {
   stopTimer();
   S.view.clearHover();
@@ -409,19 +531,11 @@ function animateResult(result) {
 
   updateScores();
 
-  if (result.gameOver) {
-    setTimeout(() => endGame(result.winner), 650);
-    return;
-  }
+  if (result.gameOver) { setTimeout(() => endGame(result.winner), 650); return; }
 
-  if (!result.bonusTurn) {
-    S.combo = 0;
-    setTimeout(() => sfx.turn(), 120);
-  } else {
-    statusPill('Bonus turn! 🔥');
-  }
+  if (!result.bonusTurn) { S.combo = 0; setTimeout(() => sfx.turn(), 120); }
+  else statusPill('Bonus turn! 🔥');
 
-  // Advance after the snap settles.
   setTimeout(beginTurn, result.bonusTurn ? 340 : 260);
 }
 
@@ -429,18 +543,24 @@ function animateResult(result) {
 // UI helpers
 // ===================================================================
 function updateScores() {
-  $('#p1-score').textContent = S.game.scores.p1;
-  $('#p2-score').textContent = S.game.scores.p2;
+  for (const id of S.players) {
+    const c = S.cardEls[id];
+    if (c) c.scoreEl.textContent = S.game.scores[id];
+  }
 }
 function flashScore(pid) {
-  const el = $('#' + (pid === 'p1' ? 'p1' : 'p2') + '-score');
+  const c = S.cardEls[pid];
+  if (!c) return;
+  const el = c.scoreEl;
   el.style.animation = 'none'; void el.offsetWidth;
   el.style.animation = 'mark-pop 0.4s var(--ease-elastic)';
 }
 function updateTurnUI() {
   const cur = S.game.currentPlayer;
-  $('#card-p1').classList.toggle('is-active', cur === 'p1' && !S.game.gameOver);
-  $('#card-p2').classList.toggle('is-active', cur === 'p2' && !S.game.gameOver);
+  for (const id of S.players) {
+    const c = S.cardEls[id];
+    if (c) c.card.classList.toggle('is-active', id === cur && !S.game.gameOver);
+  }
 }
 let pillTimer = null;
 function statusPill(text) {
@@ -469,10 +589,9 @@ function startTimer(enforce) {
     if (remaining <= 0) {
       stopTimer();
       if (enforce && iControlCurrent()) {
-        // Auto-play a legal move so the game keeps flowing.
         const edge = chooseMove(S.game, 'medium');
         if (edge) {
-          statusPill("Time! Auto-move ⏱");
+          statusPill('Time! Auto-move ⏱');
           if (S.mode === 'online' && S.role === 'guest') S.net.send({ t: 'reqmove', edgeId: edge });
           else commitMove(edge, true);
         }
@@ -484,9 +603,7 @@ function startTimer(enforce) {
   tick();
   S.timerHandle = setInterval(tick, 100);
 }
-function stopTimer() {
-  if (S.timerHandle) { clearInterval(S.timerHandle); S.timerHandle = null; }
-}
+function stopTimer() { if (S.timerHandle) { clearInterval(S.timerHandle); S.timerHandle = null; } }
 
 // ===================================================================
 // End game / result
@@ -496,31 +613,36 @@ function endGame(winner) {
   S.view.setInteractive(false);
   updateTurnUI();
 
-  const s1 = S.game.scores.p1, s2 = S.game.scores.p2;
-  $('#res-p1 .rs-name').textContent = S.names.p1;
-  $('#res-p2 .rs-name').textContent = S.names.p2;
-  $('#res-p1 .rs-num').textContent = s1;
-  $('#res-p2 .rs-num').textContent = s2;
-  $('#res-p1').classList.toggle('win', winner === 'p1');
-  $('#res-p2').classList.toggle('win', winner === 'p2');
+  // Build result score cards.
+  const wrap = $('#result-scores');
+  wrap.innerHTML = '';
+  const ranked = S.players.slice().sort((a, b) => S.game.scores[b] - S.game.scores[a]);
+  for (const id of ranked) {
+    const box = document.createElement('div');
+    box.className = 'result-score' + (winner === id ? ' win' : '');
+    box.style.setProperty('--pc', colorFor(id));
+    const nm = document.createElement('span'); nm.className = 'rs-name'; nm.textContent = S.names[id] || id;
+    const num = document.createElement('span'); num.className = 'rs-num'; num.textContent = S.game.scores[id];
+    box.appendChild(nm); box.appendChild(num);
+    wrap.appendChild(box);
+  }
 
   let title, trophy;
   if (winner === 'tie') { title = "It's a Tie!"; trophy = '🤝'; }
-  else {
-    const name = S.names[winner];
-    title = `${name} Wins!`;
-    trophy = '🏆';
-  }
+  else { title = `${S.names[winner]} Wins!`; trophy = '🏆'; }
   $('#result-title').textContent = title;
   $('#trophy').textContent = trophy;
 
-  // Victory wave over the winner's boxes, then confetti cannon.
   const winnerBoxes = [...S.game.boxes.entries()].filter(([, o]) => o === winner).map(([b]) => b);
   S.view.pulseBoxes(winnerBoxes.length ? winnerBoxes : [...S.game.boxes.keys()], 70);
 
+  // Rematch label reset.
+  $('#rematch-btn').disabled = false;
+  $('#rematch-btn').textContent = 'Rematch';
+
   setTimeout(() => {
     show('result');
-    if (winner === 'tie') { sfx.turn(); }
+    if (winner === 'tie') sfx.turn();
     else {
       const iWon = S.mode === 'ai' ? winner !== S.aiPlayer
         : S.mode === 'online' ? winner === S.myPlayer : true;
@@ -531,19 +653,24 @@ function endGame(winner) {
 }
 
 function initResult() {
-  $('#result-menu-btn').addEventListener('click', () => { sfx.click(); cleanupNet(); FX.clearFX(); show('menu'); });
+  $('#result-menu-btn').addEventListener('click', () => { sfx.click(); leaveOnline(); FX.clearFX(); show('menu'); });
   $('#rematch-btn').addEventListener('click', () => {
     sfx.click();
     if (S.mode === 'online') {
-      if (S.role === 'host') { S.net.send({ t: 'rematch' }); doRematch(); }
-      else { S.net.send({ t: 'rematch' }); statusPill('Rematch requested…'); }
+      if (S.role === 'host') onlineRestart();
+      else {
+        if (S.net && S.net.send({ t: 'rematch-req' })) {
+          $('#rematch-btn').disabled = true;
+          $('#rematch-btn').textContent = 'Waiting for host…';
+        } else banner('Not connected to host.', true);
+      }
     } else doRematch();
   });
 }
-function doRematch() { FX.clearFX(); startGame(); }
+function doRematch() { FX.clearFX(); startGame({ fresh: true }); }
 
 // ===================================================================
-// Emotes + network banner
+// Emotes + banners + exit
 // ===================================================================
 function initEmotes() {
   $('#emotes').addEventListener('click', (e) => {
@@ -553,10 +680,8 @@ function initEmotes() {
     showEmote(emoji);
     if (S.mode === 'online' && S.net) S.net.send({ t: 'emote', emoji });
   });
-  $('#exit-btn').addEventListener('click', () => {
-    sfx.click(); stopTimer(); cleanupNet(); FX.clearFX(); show('menu');
-  });
-  $('#share-mini').addEventListener('click', () => copyText(roomLink(S.net?.code), 'Link copied!'));
+  $('#exit-btn').addEventListener('click', () => { sfx.click(); stopTimer(); leaveOnline(); FX.clearFX(); show('menu'); });
+  $('#share-mini').addEventListener('click', () => copyText(roomLink(S.roomCode), 'Link copied!'));
 }
 function showEmote(emoji) {
   const layer = $('#emote-float');
@@ -580,30 +705,30 @@ function banner(text, isErr) {
 // ===================================================================
 // misc
 // ===================================================================
-function cleanupNet() {
+function leaveOnline() {
+  S.leaving = true;
   if (S.net) { try { S.net.close(); } catch (_) {} S.net = null; }
-  S.role = null;
+  S.role = null; S.reconnectTries = 0;
 }
 function copyText(text, okMsg) {
   if (!text) return;
   const done = () => { statusPill(okMsg); banner(okMsg); };
   if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => prompt('Copy:', text));
-  else { prompt('Copy:', text); }
+  else prompt('Copy:', text);
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 function checkDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const room = params.get('room');
-  if (room) {
-    openLobby();
-    // switch to join tab, prefill
-    $$('.lobby-tabs .tab').forEach((x) => x.classList.remove('is-active'));
-    $$('#screen-lobby .tab-pane').forEach((x) => x.classList.remove('is-active'));
-    document.querySelector('.tab[data-tab="join"]').classList.add('is-active');
-    $('#pane-join').classList.add('is-active');
-    $('#join-code').value = room.toUpperCase().slice(0, 6);
-  }
+  if (!room) return;
+  openLobby();
+  switchLobbyTab('join');
+  $('#join-code').value = room.toUpperCase().slice(0, 6);
+  // Auto-join shortly (PeerJS is already loaded via the classic script tag).
+  $('#join-status').textContent = 'Joining room…';
+  $('#join-waiting').hidden = false;
+  setTimeout(() => joinRoom(true), 500);
 }
 
 // ---- boot ---------------------------------------------------------------
@@ -614,7 +739,6 @@ function boot() {
   initLobby();
   initResult();
   initEmotes();
-  // Unlock audio on first pointer interaction anywhere.
   window.addEventListener('pointerdown', unlockAudio, { once: true });
   checkDeepLink();
 }

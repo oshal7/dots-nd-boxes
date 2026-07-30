@@ -54,6 +54,15 @@
       <button class="back-btn" data-back="menu">‹ Back</button>
       <h2 id="setup-title">Game Setup</h2>
 
+      <div class="field" id="players-field" hidden>
+        <label>Players</label>
+        <div class="chips" id="players-chips">
+          <button class="chip is-selected" data-players="2">2 <small>players</small></button>
+          <button class="chip" data-players="3">3 <small>players</small></button>
+          <button class="chip" data-players="4">4 <small>players</small></button>
+        </div>
+      </div>
+
       <div class="field">
         <label>Board size</label>
         <div class="chips" id="size-chips">
@@ -83,16 +92,7 @@
         </div>
       </div>
 
-      <div class="field field--names">
-        <div class="name-input">
-          <label>Player 1</label>
-          <input id="name-p1" maxlength="14" placeholder="Player 1" />
-        </div>
-        <div class="name-input" id="name2-wrap">
-          <label id="name-p2-label">Player 2</label>
-          <input id="name-p2" maxlength="14" placeholder="Player 2" />
-        </div>
-      </div>
+      <div class="field field--names" id="names-fields"></div>
 
       <button class="btn btn--primary btn--start" id="setup-start">Start Game →</button>
     </div>
@@ -168,25 +168,7 @@
       </div>
     </header>
 
-    <div class="players">
-      <div class="player-card" id="card-p1">
-        <span class="player-dot"></span>
-        <div class="player-meta">
-          <span class="player-name" id="p1-name">Player 1</span>
-          <span class="player-score" id="p1-score">0</span>
-        </div>
-        <span class="active-badge">YOUR TURN</span>
-      </div>
-      <div class="vs">VS</div>
-      <div class="player-card" id="card-p2">
-        <span class="player-dot"></span>
-        <div class="player-meta">
-          <span class="player-name" id="p2-name">Player 2</span>
-          <span class="player-score" id="p2-score">0</span>
-        </div>
-        <span class="active-badge">TURN</span>
-      </div>
-    </div>
+    <div class="players" id="players"></div>
 
     <div class="timer-wrap" id="timer-wrap" hidden>
       <div class="timer-bar"><span id="timer-fill"></span></div>
@@ -220,14 +202,7 @@
     <div class="result-card">
       <div class="trophy" id="trophy">🏆</div>
       <h2 id="result-title">Player 1 Wins!</h2>
-      <div class="result-scores">
-        <div class="result-score" id="res-p1">
-          <span class="rs-name">Player 1</span><span class="rs-num">0</span>
-        </div>
-        <div class="result-score" id="res-p2">
-          <span class="rs-name">Player 2</span><span class="rs-num">0</span>
-        </div>
-      </div>
+      <div class="result-scores" id="result-scores"></div>
       <div class="result-actions">
         <button class="btn btn--primary" id="rematch-btn">Rematch</button>
         <button class="btn btn--ghost" id="result-menu-btn">Main Menu</button>
@@ -253,7 +228,7 @@
   <canvas class="fx-canvas" id="fx-canvas"></canvas>
   <div class="float-layer" id="float-layer"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="vendor/peerjs.min.js"></script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

@@ -9,9 +9,11 @@ tactile micro-animations, particle sparks, confetti, and procedural sound effect
 ## Features
 
 - **Three ways to play**
-  - **Pass & Play** — two players sharing one device.
+  - **Pass & Play** — **2 to 4 players** sharing one device (each with their own colour).
   - **Vs Computer** — a bot with Easy / Medium / Hard difficulty.
-  - **Play Online** — cross-device play via a 6-character **room code** or shareable link.
+  - **Play Online** — cross-device play via a 6-character **room code** or shareable link,
+    with auto-join from the link, a keepalive heartbeat, and automatic **reconnect/resume**
+    if a connection blips (no lost game).
 - **Delightful motion** (per the PRD animation directory)
   - Neon dashed **hover preview**, elastic **line-snap** with endpoint sparks.
   - Radial **liquid-fill** box captures with a bouncy owner-mark pop.
@@ -31,10 +33,10 @@ scores are a tie.
 ## Tech
 
 Pure static site — **vanilla JS ES modules, SVG board, Canvas particle overlay**. No
-build step. Online play uses **[PeerJS](https://peerjs.com/)** (WebRTC data channels)
-over its free public broker purely for signaling; the host client is authoritative for
-move validation. There is no server of our own — which is what lets the whole game run
-on GitHub Pages.
+build step. Online play uses **[PeerJS](https://peerjs.com/)** (WebRTC data channels,
+vendored at `vendor/peerjs.min.js` so there's no CDN dependency) over its free public
+broker purely for signaling; the host client is authoritative for move validation. There
+is no server of our own — which is what lets the whole game run on GitHub Pages.
 
 ### Project structure
 
