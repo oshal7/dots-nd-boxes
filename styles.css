@@ -52,13 +52,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   touch-action: manipulation;
-  /* graph-paper background */
+  /* plain warm-paper background (no grid) */
   background-color: var(--paper);
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-    radial-gradient(1100px 700px at 50% -10%, rgba(255,255,255,0.6) 0%, transparent 60%);
-  background-size: 26px 26px, 26px 26px, 100% 100%;
+  background-image: radial-gradient(1100px 700px at 50% -10%, rgba(255,255,255,0.6) 0%, transparent 60%);
 }
 
 button { font-family: inherit; cursor: pointer; color: var(--ink); }
