@@ -18,6 +18,26 @@ const PREFIX = 'dnb-'; // namespace peer ids to reduce broker collisions
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 const CODE_LEN = 6;
 const HEARTBEAT_MS = 4000;
+const CONNECT_TIMEOUT_MS = 15000;
+
+// ICE servers for WebRTC. STUN lets peers discover their public address;
+// TURN relays traffic when a direct peer-to-peer path is impossible (strict /
+// symmetric NAT, mobile carriers, some corporate firewalls). Without TURN,
+// players on different networks often can't connect at all. The OpenRelay
+// project provides free public TURN; Google/Twilio STUN are free too.
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:global.stun.twilio.com:3478' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+];
+
+function peerOpts(id) {
+  const opts = { debug: 2, config: { iceServers: ICE_SERVERS } };
+  return id ? [id, opts] : [opts];
+}
 
 export function makeRoomCode() {
   let s = '';
@@ -58,9 +78,10 @@ export class Net {
       let attempts = 0;
       const tryOpen = () => {
         const code = makeRoomCode();
-        const peer = new window.Peer(PREFIX + code, { debug: 1 });
+        const peer = new window.Peer(...peerOpts(PREFIX + code));
         this.peer = peer;
         peer.on('error', (err) => {
+          console.warn('[net] host peer error:', err && err.type, err && err.message);
           if (err && err.type === 'unavailable-id' && attempts < 4) {
             attempts++;
             try { peer.destroy(); } catch (_) {}
@@ -73,11 +94,13 @@ export class Net {
           }
         });
         peer.on('open', () => {
+          console.info('[net] host room ready:', code);
           this.code = code;
           this._bindHostConnections();
           resolve(code);
         });
         peer.on('disconnected', () => {
+          console.warn('[net] host disconnected from broker — reconnecting');
           if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch (_) {} }
         });
       };
@@ -87,6 +110,7 @@ export class Net {
 
   _bindHostConnections() {
     this.peer.on('connection', (conn) => {
+      console.info('[net] host: incoming connection from', conn.peer);
       const haveLive = this.conn && this.conn.open;
       if (haveLive && conn.peer !== (this.conn && this.conn.peer)) {
         // A different second guest — reject; this is a 1v1 room.
@@ -105,35 +129,55 @@ export class Net {
     this.isHost = false;
     this.code = code;
     return new Promise((resolve, reject) => {
-      const peer = new window.Peer({ debug: 1 });
+      const peer = new window.Peer(...peerOpts());
       this.peer = peer;
       let settled = false;
-      let retried = false;
+      let retries = 0;
+      let timer = null;
+
+      const finishOk = (conn) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        console.info('[net] guest: data channel open');
+        this._bindConn(conn, false);
+        resolve();
+      };
+      const finishErr = (err) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        this._emit('error', err);
+        reject(err);
+      };
 
       const attemptConnect = () => {
+        if (settled) return;
+        console.info('[net] guest: connecting to', PREFIX + code, '(try', retries + 1, ')');
         const conn = peer.connect(PREFIX + code, { reliable: true });
         this.conn = conn;
-        const timeout = setTimeout(() => {
-          if (!settled) { settled = true; reject(new Error('timeout')); try { conn.close(); } catch (_) {} }
-        }, 12000);
-        conn.on('open', () => {
-          clearTimeout(timeout);
-          this._bindConn(conn, false);
-          if (!settled) { settled = true; resolve(); }
-        });
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          // Data channel didn't open — usually NAT/firewall with no relay path.
+          if (settled) return;
+          if (retries < 2) { retries++; console.warn('[net] guest: connect timed out, retrying'); try { conn.close(); } catch (_) {} attemptConnect(); }
+          else { try { conn.close(); } catch (_) {} finishErr(new Error('timeout')); }
+        }, CONNECT_TIMEOUT_MS);
+        conn.on('open', () => finishOk(conn));
+        conn.on('error', (err) => console.warn('[net] guest conn error:', err && err.type));
       };
 
       peer.on('error', (err) => {
-        // Host id not yet registered — retry once shortly.
-        if (err && err.type === 'peer-unavailable' && !retried) {
-          retried = true;
-          setTimeout(attemptConnect, 1500);
+        console.warn('[net] guest peer error:', err && err.type, err && err.message);
+        // Host id not yet registered on the broker — retry a few times.
+        if (err && err.type === 'peer-unavailable' && retries < 3) {
+          retries++;
+          setTimeout(attemptConnect, 1200);
           return;
         }
-        this._emit('error', err);
-        if (!settled) { settled = true; reject(err); }
+        finishErr(err);
       });
-      peer.on('open', attemptConnect);
+      peer.on('open', () => { console.info('[net] guest peer ready'); attemptConnect(); });
       peer.on('disconnected', () => {
         if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch (_) {} }
       });

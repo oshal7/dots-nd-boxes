@@ -247,9 +247,13 @@ function onHostData(msg) {
       // Late-join or reconnect: bring them straight into the current game.
       S.net.send({ t: 'start', config: S.config, hostName: S.names.p1, guestName: S.names.p2, snapshot: S.game.snapshot() });
     } else {
-      $('#host-waiting').innerHTML = `✅ <b>${escapeHtml(S.names.p2)}</b> joined!`;
-      $('#host-start-btn').hidden = false;
+      // Fresh join in the lobby — auto-start so the guest never waits on a
+      // manual button press (a common source of "stuck on loading").
+      $('#host-waiting').innerHTML = `✅ <b>${escapeHtml(S.names.p2)}</b> joined! Starting…`;
       sfx.capture();
+      setTimeout(() => {
+        if (S.mode === 'online' && S.role === 'host' && !onGameScreen()) onlineRestart();
+      }, 700);
     }
   } else if (msg.t === 'reqmove') {
     if (S.game && !S.game.gameOver && S.game.currentPlayer === 'p2' && S.game.canMove(msg.edgeId)) {
@@ -273,8 +277,7 @@ async function joinRoom(auto) {
   S.players = ['p1', 'p2'];
   S.roomCode = code;
   S.names.p2 = ($('#online-guest-name').value.trim() || 'Guest').slice(0, 14);
-  $('#join-waiting').hidden = false;
-  $('#join-status').textContent = 'Connecting…';
+  setJoinState('Connecting to room ' + code + '…', true);
   $('#join-room-btn').disabled = true;
 
   const net = new Net();
@@ -282,18 +285,34 @@ async function joinRoom(auto) {
   S.net = net;
   try {
     await net.joinRoom(code);
-    $('#join-status').textContent = 'Connected! Waiting for host to start…';
+    setJoinState('Connected ✓ — starting game…', true);
     net.send({ t: 'hello', name: S.names.p2 });
   } catch (e) {
-    $('#join-status').textContent = 'Could not connect. Check the code and try again.';
+    setJoinState('Couldn\'t connect. Make sure the host still has the room open, then tap Join to retry.', false);
     $('#join-room-btn').disabled = false;
   }
 }
 
+// Render the join waiting/error area. Keeps a #join-status element present so
+// other handlers can update it. spin=false shows a warning instead of a spinner.
+function setJoinState(text, spin) {
+  const w = $('#join-waiting');
+  w.hidden = false;
+  w.innerHTML = (spin ? '<span class="spinner"></span> ' : '⚠️ ') + '<span id="join-status"></span>';
+  $('#join-status').textContent = text;
+}
+
 function attachGuestHandlers(net) {
   net
-    .on('error', () => {
-      if (!onGameScreen()) { $('#join-status').textContent = 'Room not found or unavailable.'; $('#join-room-btn').disabled = false; }
+    .on('error', (err) => {
+      if (!onGameScreen()) {
+        const t = err && err.type;
+        const msg = t === 'peer-unavailable'
+          ? 'Room not found. Check the code, and make sure the host still has the page open.'
+          : 'Connection problem (' + (t || 'unknown') + '). Try again.';
+        setJoinState(msg, false);
+        $('#join-room-btn').disabled = false;
+      }
     })
     .on('data', onGuestData)
     .on('peer', (ev) => {
@@ -726,8 +745,7 @@ function checkDeepLink() {
   switchLobbyTab('join');
   $('#join-code').value = room.toUpperCase().slice(0, 6);
   // Auto-join shortly (PeerJS is already loaded via the classic script tag).
-  $('#join-status').textContent = 'Joining room…';
-  $('#join-waiting').hidden = false;
+  setJoinState('Joining room…', true);
   setTimeout(() => joinRoom(true), 500);
 }
 
