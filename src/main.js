@@ -19,6 +19,7 @@ const S = {
   game: null,            // authoritative (local/ai/host) or mirror (guest)
   view: null,            // BoardView
   config: { dots: 5, timer: 0, difficulty: 'medium' },
+  userPickedSize: false, // true once the player taps a board-size chip
   playerCount: 2,        // 2..4 (local only)
   players: ['p1', 'p2'], // active player ids this game
   names: { p1: 'Player 1', p2: 'Player 2', p3: 'Player 3', p4: 'Player 4' },
@@ -74,6 +75,43 @@ function initMenu() {
   $$('.back-btn').forEach((b) => b.addEventListener('click', () => { sfx.click(); leaveOnline(); show(b.dataset.back); }));
 }
 
+// ---- screen-aware board sizes ------------------------------------------
+// Small phones only offer small boards (a 10x10 grid is unplayable on a
+// 5" screen); tablets/laptops unlock bigger boards. vs-Computer is capped so
+// the bot stays snappy.
+const SIZE_POOL = { phone: [4, 5, 6, 7], tablet: [5, 6, 8, 10], desktop: [6, 8, 10, 12] };
+const SIZE_DEFAULT = { phone: 5, tablet: 6, desktop: 8 };
+
+function screenTier() {
+  const minDim = Math.min(window.innerWidth, window.innerHeight);
+  if (minDim < 600) return 'phone';
+  if (minDim < 860) return 'tablet';
+  return 'desktop';
+}
+
+function boardOptions(mode) {
+  const tier = screenTier();
+  let list = SIZE_POOL[tier].slice();
+  if (mode === 'ai') list = list.filter((d) => d <= 8);        // keep the bot fast
+  if (list.length < 2) list = [5, 6];
+  let def = SIZE_DEFAULT[tier];
+  if (!list.includes(def)) def = list[Math.min(1, list.length - 1)];
+  return { list, def };
+}
+
+// (Re)build a board-size chip group for the current screen + mode.
+function renderSizeChips(container, mode) {
+  if (!container) return;
+  const { list, def } = boardOptions(mode);
+  // Use the screen's natural default unless the player has explicitly picked a
+  // size that's still valid for this screen/mode.
+  const cur = (S.userPickedSize && list.includes(S.config.dots)) ? S.config.dots : def;
+  S.config.dots = cur;
+  container.innerHTML = list
+    .map((d) => `<button class="chip${d === cur ? ' is-selected' : ''}" data-dots="${d}">${d}×${d} <small>${(d - 1) * (d - 1)} boxes</small></button>`)
+    .join('');
+}
+
 function chipGroup(container, attr, onPick) {
   container.addEventListener('click', (e) => {
     const chip = e.target.closest('.chip');
@@ -94,6 +132,7 @@ function openSetup(mode) {
   $('#difficulty-field').hidden = mode !== 'ai';
   $('#players-field').hidden = mode !== 'local';
   if (mode === 'ai') S.playerCount = 2;
+  renderSizeChips($('#size-chips'), mode);
   renderNameInputs();
   show('setup');
 }
@@ -134,7 +173,7 @@ function renderNameInputs() {
 }
 
 function initSetup() {
-  chipGroup($('#size-chips'), 'dots', (v) => (S.config.dots = +v));
+  chipGroup($('#size-chips'), 'dots', (v) => { S.config.dots = +v; S.userPickedSize = true; });
   chipGroup($('#timer-chips'), 'timer', (v) => (S.config.timer = +v));
   chipGroup($('#difficulty-chips'), 'diff', (v) => (S.config.difficulty = v));
   chipGroup($('#players-chips'), 'players', (v) => { S.playerCount = +v; renderNameInputs(); });
@@ -162,7 +201,7 @@ function initLobby() {
   $$('.lobby-tabs .tab').forEach((t) =>
     t.addEventListener('click', () => { sfx.click(); switchLobbyTab(t.dataset.tab); })
   );
-  chipGroup($('#online-size-chips'), 'dots', (v) => (S.config.dots = +v));
+  chipGroup($('#online-size-chips'), 'dots', (v) => { S.config.dots = +v; S.userPickedSize = true; });
   $('#create-room-btn').addEventListener('click', createRoom);
   $('#join-room-btn').addEventListener('click', () => joinRoom());
   $('#copy-code-btn').addEventListener('click', () => copyText(S.roomCode, 'Code copied!'));
@@ -181,6 +220,7 @@ function openLobby() {
     banner('Online needs the PeerJS library (failed to load). Pass & Play and vs Computer still work.', true);
     return;
   }
+  renderSizeChips($('#online-size-chips'), 'online');
   show('lobby');
 }
 
@@ -758,6 +798,20 @@ function boot() {
   initResult();
   initEmotes();
   window.addEventListener('pointerdown', unlockAudio, { once: true });
+
+  // Re-adapt board-size options when the screen size/orientation changes,
+  // but only while the user is on a screen that shows them.
+  let rzT = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(rzT);
+    rzT = setTimeout(() => {
+      if ($('#screen-setup').classList.contains('active')) renderSizeChips($('#size-chips'), S.mode);
+      if ($('#screen-lobby').classList.contains('active') && $('#pane-create').classList.contains('is-active')) {
+        renderSizeChips($('#online-size-chips'), 'online');
+      }
+    }, 300);
+  });
+
   checkDeepLink();
 }
 boot();

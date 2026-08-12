@@ -34,6 +34,10 @@
   --font-hand: 'Patrick Hand', 'Caveat', 'Comic Sans MS', cursive;
   --font-ui: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
+  /* width of the in-game column (players/board/footer) — grows on big screens */
+  --game-col: min(560px, 100%);
+  --board-maxh: 58vh;
+
   --radius: 16px;
   --shadow: 0 8px 26px rgba(70, 58, 30, 0.14);
   --shadow-sm: 0 3px 10px rgba(70, 58, 30, 0.10);
@@ -167,13 +171,13 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 
 /* ---------- game top ---------- */
 .screen--game { justify-content: flex-start; gap: 10px; }
-.game-top { width: min(560px, 100%); display: flex; align-items: center; justify-content: space-between; padding: 4px; }
+.game-top { width: var(--game-col); display: flex; align-items: center; justify-content: space-between; padding: 4px; }
 .game-title { font-family: var(--font-hand); font-size: 18px; letter-spacing: 1px; color: var(--ink-soft); }
 .icon-btn { width: 40px; height: 40px; border-radius: 11px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); font-size: 18px; box-shadow: 2px 2px 0 rgba(56,53,47,0.14); }
 .icon-btn:active { transform: translate(1px,1px); box-shadow: none; }
 
 /* ---------- player cards ---------- */
-.players { width: min(560px, 100%); display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.players { width: var(--game-col); display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
 .player-card {
   --pc: var(--accent); flex: 1 1 42%; position: relative; min-width: 0;
   display: flex; align-items: center; gap: 10px; padding: 11px 13px;
@@ -199,7 +203,7 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 @keyframes breathe { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
 /* ---------- timer ---------- */
-.timer-wrap { width: min(560px, 100%); display: flex; align-items: center; gap: 10px; }
+.timer-wrap { width: var(--game-col); display: flex; align-items: center; gap: 10px; }
 .timer-bar { flex: 1; height: 9px; border-radius: 6px; background: var(--paper-2); border: 1.5px solid var(--line); overflow: hidden; }
 .timer-bar span { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--good), var(--warn)); border-radius: 6px; transform-origin: left; }
 .timer-text { font-family: var(--font-hand); font-size: 16px; color: var(--ink-soft); min-width: 34px; text-align: right; }
@@ -207,7 +211,7 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 .timer-wrap.low .timer-text { color: var(--p2); }
 
 /* ---------- board ---------- */
-.board-wrap { position: relative; width: min(560px, 100%); flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 6px 0; }
+.board-wrap { position: relative; width: var(--game-col); flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; max-height: var(--board-maxh); padding: 6px 0; }
 .board { width: 100%; height: 100%; max-height: 100%; touch-action: none; }
 .board--locked .edge-hit { cursor: default; }
 
@@ -232,7 +236,7 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 .status-pill.show { opacity: 1; }
 
 /* ---------- game bottom ---------- */
-.game-bottom { width: min(560px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; }
+.game-bottom { width: var(--game-col); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; }
 .emotes { display: flex; gap: 6px; }
 .emotes button { width: 42px; height: 42px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); font-size: 20px; box-shadow: 2px 2px 0 rgba(56,53,47,0.08); transition: transform 0.15s var(--ease-elastic); }
 .emotes button:hover { transform: translateY(-2px) scale(1.05); }
@@ -283,7 +287,13 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 480px) { .brand h1 { font-size: 52px; } .player-score { font-size: 22px; } }
-@media (min-height: 760px) { .board-wrap { max-height: 62vh; } }
+
+/* Grow the game column + board on larger screens so the board fills the space
+   instead of being stuck at phone size on laptops/tablets. */
+@media (min-height: 720px) { :root { --board-maxh: 62vh; } }
+@media (min-width: 700px) and (min-height: 640px) { :root { --game-col: min(680px, 92vw); } }
+@media (min-width: 1024px) and (min-height: 700px) { :root { --game-col: min(780px, 84vw); --board-maxh: 66vh; } }
+@media (min-width: 1280px) and (min-height: 800px) { :root { --game-col: min(880px, 74vw); --board-maxh: 70vh; } }
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
