@@ -5,7 +5,7 @@ import { chooseMove } from './ai.js';
 import { BoardView } from './render.js';
 import * as FX from './animations.js';
 import { sfx, unlockAudio, toggleMuted, isMuted } from './audio.js';
-import { Net, peerAvailable } from './net.js';
+import { Net, peerAvailable, getCustomTurn, setCustomTurn, hasCustomTurn } from './net.js';
 
 // Up to 4 distinct player colours.
 const COLORS = { p1: '#2f6bd8', p2: '#e0496b', p3: '#23a06b', p4: '#e88a24' };
@@ -328,7 +328,16 @@ async function joinRoom(auto) {
     setJoinState('Connected ✓ — starting game…', true);
     net.send({ t: 'hello', name: S.names.p2 });
   } catch (e) {
-    setJoinState('Couldn\'t connect. Make sure the host still has the room open, then tap Join to retry.', false);
+    const kind = e && e.kind;
+    if (kind === 'ice') {
+      // Reached the host but couldn't punch a direct link — needs a TURN relay.
+      setJoinState('Reached the host but couldn\'t link your two networks directly. This is normal across different networks and needs a TURN relay.', false);
+      $('#conn-help').hidden = false;
+    } else if (kind === 'not-found') {
+      setJoinState('Room not found. Double-check the code, and make sure the host still has the page open.', false);
+    } else {
+      setJoinState('Connection problem. Check your internet and try again.', false);
+    }
     $('#join-room-btn').disabled = false;
   }
 }
@@ -729,6 +738,51 @@ function initResult() {
 function doRematch() { FX.clearFX(); startGame({ fresh: true }); }
 
 // ===================================================================
+// Connection settings (custom TURN relay)
+// ===================================================================
+function initConnSettings() {
+  const refreshLabel = () => {
+    $('#conn-settings-btn').textContent = hasCustomTurn()
+      ? '⚙ Connection settings — TURN active ✓'
+      : '⚙ Connection settings';
+  };
+  const open = () => {
+    const cur = getCustomTurn();
+    if (cur.length) {
+      const s = cur[0];
+      $('#turn-url').value = Array.isArray(s.urls) ? s.urls.join(', ') : (s.urls || '');
+      $('#turn-user').value = s.username || '';
+      $('#turn-cred').value = s.credential || '';
+    }
+    $('#turn-status').textContent = hasCustomTurn() ? 'A custom TURN relay is saved and in use.' : '';
+    $('#conn-modal').hidden = false;
+  };
+  $('#conn-settings-btn').addEventListener('click', () => { sfx.click(); open(); });
+  $('#conn-close').addEventListener('click', () => { sfx.click(); $('#conn-modal').hidden = true; });
+  $('#turn-save').addEventListener('click', () => {
+    const urls = $('#turn-url').value.split(',').map((s) => s.trim()).filter(Boolean);
+    const username = $('#turn-user').value.trim();
+    const credential = $('#turn-cred').value.trim();
+    if (!urls.length || !username || !credential) {
+      $('#turn-status').textContent = 'Please fill in the URL(s), username, and credential.';
+      return;
+    }
+    setCustomTurn([{ urls, username, credential }]);
+    sfx.capture();
+    $('#turn-status').textContent = 'Saved ✓ — create or join a room again to use the relay.';
+    banner('TURN relay saved ✓');
+    refreshLabel();
+  });
+  $('#turn-clear').addEventListener('click', () => {
+    setCustomTurn([]);
+    $('#turn-url').value = ''; $('#turn-user').value = ''; $('#turn-cred').value = '';
+    $('#turn-status').textContent = 'Cleared — using best-effort public relays only.';
+    refreshLabel();
+  });
+  refreshLabel();
+}
+
+// ===================================================================
 // Emotes + banners + exit
 // ===================================================================
 function initEmotes() {
@@ -797,6 +851,7 @@ function boot() {
   initLobby();
   initResult();
   initEmotes();
+  initConnSettings();
   window.addEventListener('pointerdown', unlockAudio, { once: true });
 
   // Re-adapt board-size options when the screen size/orientation changes,

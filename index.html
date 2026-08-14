@@ -155,6 +155,14 @@
           <span class="spinner"></span> <span id="join-status">Connecting…</span>
         </div>
       </div>
+
+      <div class="conn-row">
+        <button class="link-btn" id="conn-settings-btn">⚙ Connection settings</button>
+        <p class="conn-help" id="conn-help" hidden>
+          Playing across <b>different networks</b> (Wi-Fi ↔ mobile data) needs a free <b>TURN relay</b>.
+          Tap <b>Connection settings</b> to add free credentials — same network works without it.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -221,6 +229,33 @@
         <li>When every line is drawn, the most boxes wins. Equal scores tie.</li>
       </ul>
       <button class="btn btn--primary" id="howto-close">Got it</button>
+    </div>
+  </div>
+
+  <!-- Connection settings (TURN) modal -->
+  <div class="modal" id="conn-modal" hidden>
+    <div class="modal-card">
+      <h3>Connection settings</h3>
+      <p class="modal-note">
+        Same-network play works out of the box. To play across <b>different networks</b>
+        (e.g. Wi-Fi ↔ mobile data), browsers need a <b>TURN relay</b>. Free public ones are
+        unreliable — get your own free credentials in a few minutes:
+      </p>
+      <ol class="modal-steps">
+        <li>Create a free account at <b>metered.ca</b> (50&nbsp;GB/month free).</li>
+        <li>Open <b>TURN Server</b> and copy the <b>URL(s)</b>, <b>username</b>, and <b>credential</b>.</li>
+        <li>Paste them below, Save, then share the room again.</li>
+      </ol>
+      <div class="field"><label>TURN URL(s) — comma separated</label>
+        <input id="turn-url" placeholder="turn:relay.metered.ca:80, turns:relay.metered.ca:443" /></div>
+      <div class="field"><label>Username</label><input id="turn-user" placeholder="your-username" /></div>
+      <div class="field"><label>Credential / password</label><input id="turn-cred" placeholder="your-credential" /></div>
+      <p class="modal-note" id="turn-status"></p>
+      <div class="modal-actions">
+        <button class="btn btn--primary" id="turn-save">Save</button>
+        <button class="btn btn--ghost" id="turn-clear">Clear</button>
+        <button class="btn btn--ghost" id="conn-close">Close</button>
+      </div>
     </div>
   </div>
 

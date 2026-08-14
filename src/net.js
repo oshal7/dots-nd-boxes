@@ -18,24 +18,52 @@ const PREFIX = 'dnb-'; // namespace peer ids to reduce broker collisions
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 const CODE_LEN = 6;
 const HEARTBEAT_MS = 4000;
-const CONNECT_TIMEOUT_MS = 15000;
+const CONNECT_TIMEOUT_MS = 12000;
+const TURN_STORE_KEY = 'dnb_turn'; // user-supplied TURN servers (localStorage)
 
-// ICE servers for WebRTC. STUN lets peers discover their public address;
-// TURN relays traffic when a direct peer-to-peer path is impossible (strict /
-// symmetric NAT, mobile carriers, some corporate firewalls). Without TURN,
-// players on different networks often can't connect at all. The OpenRelay
-// project provides free public TURN; Google/Twilio STUN are free too.
-const ICE_SERVERS = [
+// STUN lets a browser discover its public address so two peers can try a direct
+// connection. It's free and works when at least one side has a friendly NAT.
+const STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
   { urls: 'stun:global.stun.twilio.com:3478' },
+];
+
+// Best-effort public TURN (relays traffic when a direct link is impossible —
+// e.g. two different networks / mobile data / symmetric NAT). Free public TURN
+// is unreliable, so users can supply their own via Connection settings, stored
+// under TURN_STORE_KEY and merged in below.
+const FALLBACK_TURN = [
   { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
 
+export function getCustomTurn() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(TURN_STORE_KEY) || '[]');
+    return Array.isArray(arr) ? arr.filter((s) => s && s.urls) : [];
+  } catch (_) { return []; }
+}
+export function setCustomTurn(servers) {
+  try {
+    if (servers && servers.length) localStorage.setItem(TURN_STORE_KEY, JSON.stringify(servers));
+    else localStorage.removeItem(TURN_STORE_KEY);
+    return true;
+  } catch (_) { return false; }
+}
+export function hasCustomTurn() { return getCustomTurn().length > 0; }
+
+function iceServers() {
+  const custom = getCustomTurn();
+  return [...STUN_SERVERS, ...(custom.length ? custom : FALLBACK_TURN)];
+}
+
 function peerOpts(id) {
-  const opts = { debug: 2, config: { iceServers: ICE_SERVERS } };
+  const opts = { debug: 2, config: { iceServers: iceServers() } };
   return id ? [id, opts] : [opts];
 }
 
@@ -120,6 +148,7 @@ export class Net {
       // Accept (fresh join OR a reconnect replacing a dead connection).
       try { if (this.conn && this.conn !== conn) this.conn.close(); } catch (_) {}
       this.conn = conn;
+      this._watchIce(conn);
       this._bindConn(conn, true);
     });
   }
@@ -132,36 +161,41 @@ export class Net {
       const peer = new window.Peer(...peerOpts());
       this.peer = peer;
       let settled = false;
-      let retries = 0;
+      let unavail = 0;
       let timer = null;
+      let sawHost = false; // did we reach the host (data channel or ICE progress)?
 
       const finishOk = (conn) => {
         if (settled) return;
         settled = true;
         if (timer) clearTimeout(timer);
-        console.info('[net] guest: data channel open');
+        console.info('[net] guest: data channel OPEN');
         this._bindConn(conn, false);
         resolve();
       };
-      const finishErr = (err) => {
+      const finishErr = (kind, err) => {
         if (settled) return;
         settled = true;
         if (timer) clearTimeout(timer);
-        this._emit('error', err);
-        reject(err);
+        const e = err || new Error(kind);
+        e.kind = kind; // 'not-found' | 'ice' | 'network'
+        this._emit('error', e);
+        reject(e);
       };
 
       const attemptConnect = () => {
         if (settled) return;
-        console.info('[net] guest: connecting to', PREFIX + code, '(try', retries + 1, ')');
+        console.info('[net] guest: opening data channel to', PREFIX + code);
         const conn = peer.connect(PREFIX + code, { reliable: true });
         this.conn = conn;
+        this._watchIce(conn, (state) => { if (['checking', 'connected', 'completed'].includes(state)) sawHost = true; });
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
-          // Data channel didn't open — usually NAT/firewall with no relay path.
           if (settled) return;
-          if (retries < 2) { retries++; console.warn('[net] guest: connect timed out, retrying'); try { conn.close(); } catch (_) {} attemptConnect(); }
-          else { try { conn.close(); } catch (_) {} finishErr(new Error('timeout')); }
+          try { conn.close(); } catch (_) {}
+          // If ICE progressed but never opened → relay needed (TURN). If we
+          // never saw the host at all, treat as not-found/unreachable.
+          finishErr(sawHost ? 'ice' : 'not-found', new Error('timeout'));
         }, CONNECT_TIMEOUT_MS);
         conn.on('open', () => finishOk(conn));
         conn.on('error', (err) => console.warn('[net] guest conn error:', err && err.type));
@@ -169,19 +203,35 @@ export class Net {
 
       peer.on('error', (err) => {
         console.warn('[net] guest peer error:', err && err.type, err && err.message);
-        // Host id not yet registered on the broker — retry a few times.
-        if (err && err.type === 'peer-unavailable' && retries < 3) {
-          retries++;
-          setTimeout(attemptConnect, 1200);
-          return;
+        this._emit('diag', 'peer-error:' + (err && err.type));
+        if (err && err.type === 'peer-unavailable') {
+          // Host id not yet on the broker — retry a couple of times.
+          if (unavail < 2) { unavail++; setTimeout(attemptConnect, 1500); return; }
+          return finishErr('not-found', err);
         }
-        finishErr(err);
+        finishErr('network', err);
       });
       peer.on('open', () => { console.info('[net] guest peer ready'); attemptConnect(); });
       peer.on('disconnected', () => {
         if (this.peer && !this.peer.destroyed) { try { this.peer.reconnect(); } catch (_) {} }
       });
     });
+  }
+
+  // Observe the underlying RTCPeerConnection ICE state for diagnostics.
+  _watchIce(conn, cb) {
+    setTimeout(() => {
+      const pc = conn && conn.peerConnection;
+      if (!pc) return;
+      const report = () => {
+        const s = pc.iceConnectionState;
+        console.info('[net] ICE state:', s);
+        this._emit('diag', 'ice:' + s);
+        if (cb) cb(s);
+      };
+      report();
+      pc.addEventListener('iceconnectionstatechange', report);
+    }, 250);
   }
 
   // ---- shared connection wiring ----------------------------------------

@@ -281,6 +281,16 @@ input:focus { outline: none; border-color: var(--accent); background: #fff; }
 .modal-card { width: min(420px, 100%); background: var(--card); border: 2px solid var(--ink); border-radius: var(--radius); padding: 24px; box-shadow: 6px 7px 0 rgba(56,53,47,0.16); }
 .modal-card ul { margin: 0 0 18px; padding-left: 18px; color: var(--ink-soft); line-height: 1.7; font-weight: 600; }
 .modal-card ul b { color: var(--ink); }
+.modal-note { font-size: 14px; color: var(--ink-soft); font-weight: 600; line-height: 1.55; margin: 0 0 12px; }
+.modal-note b { color: var(--ink); }
+.modal-steps { margin: 0 0 16px; padding-left: 20px; color: var(--ink-soft); line-height: 1.7; font-weight: 600; font-size: 14px; }
+.modal-steps b { color: var(--ink); }
+.modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+.modal-actions .btn { flex: 1; }
+
+.conn-row { margin-top: 16px; text-align: center; }
+.conn-help { font-size: 13px; color: var(--ink-soft); font-weight: 600; line-height: 1.5; margin: 8px 0 0; padding: 10px 12px; border: 2px dashed var(--warn); border-radius: 12px; background: color-mix(in srgb, var(--warn) 8%, var(--card)); }
+.conn-help b { color: var(--ink); }
 
 /* ---------- fx canvas ---------- */
 .fx-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 44; }
