@@ -20,7 +20,7 @@ export function finalState(game) {
 export function drawFinalBoard(parent, st, c, { id = 'score3d-board', fills = true } = {}) {
   const b = new Board(parent, { rows: 5, cols: 5, gap: c.gap, x: c.x, y: c.y, id });
   for (const [e, by] of st.edges) b.setEdge(e, { p: 1, color: LINE[by], w: 1 });
-  if (fills) for (const [bx, o] of st.owner) b.setBox(bx, { p: 1, color: FILL[o], opacity: 0.82, mark: st.marks[o], markP: 1 });
+  if (fills) for (const [bx, o] of st.owner) b.setBox(bx, { p: 1, color: FILL[o], mark: st.marks[o], markP: 1 });
   return b;
 }
 

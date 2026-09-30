@@ -1,5 +1,6 @@
 // score3d-layout.js — per-aspect layout, camera keys and a time spline for score3d.
 import { C, FILL } from '../shared/lib.js';
+import { TILT_DEG, PERSPECTIVE } from '../shared/handoff.js';
 
 /** Catmull-Rom (non-uniform time) through keys [[t, v], ...]; start slope m0 (units/s), flat at the end. Pure function of t. */
 export function spline(t, ks, slope0 = 0) {
@@ -16,6 +17,7 @@ export function spline(t, ks, slope0 = 0) {
 
 // camera keys: [time, value]; the final keys continue gently past the dive start so the spline never stops.
 const keys = (arr) => arr.map((v, i) => [TK[i], v]);
+const EL0 = 90 - TILT_DEG; // camera elevation that reproduces the CSS tilt at the cut
 const TK = [10.0, 10.8, 11.6, 12.3, 13.0, 13.5, 14.0];
 
 export function cfg(V, k) {
@@ -37,12 +39,12 @@ export function cfg(V, k) {
     return { ...base, ui: 1.3, chipUi: 1.45, chipName: 48, chipScore: 58,
       tower: { p2: { x: -tx, z: 0.1 * G }, p1: { x: tx, z: 0.1 * G } },
       cam: {
-        el: keys([68, 57, 50, 45, 40, 38, 37]),
+        el: keys([EL0, 50, 47, 44, 40, 38, 37]),
         az: keys([0, 7, 13, 18, 22, 25, 26]),
-        dist: keys([1800, 1330, 1400, 1490, 1550, 1500, 1480]),
-        tx: keys([0, 70, 20, 30, 115, 145, 155]),
-        ty: keys([0, 50, 100, 150, 175, 185, 190]),
-        tz: keys([0, 10, 20, 30, 45, 50, 52]),
+        dist: keys([PERSPECTIVE, ...[1330, 1400, 1490, 1550, 1500, 1480].map((v) => v * k)]),
+        tx: keys([0, 70, 20, 30, 115, 145, 155].map((v) => v * k)),
+        ty: keys([0, 50, 100, 150, 175, 185, 190].map((v) => v * k)),
+        tz: keys([0, 10, 20, 30, 45, 50, 52].map((v) => v * k)),
       },
       winSize: 120, winFrom: -160,
       // to the left of Mia's chip, vertically centred on it
@@ -54,9 +56,9 @@ export function cfg(V, k) {
   return { ...base, cube: vc, cubeR: 0.17 * vc, arc: 0.42 * vc + 20 * k, chipLift: 0.22 * vc, ui: 1.25, chipUi: 1.55, chipName: 52, chipScore: 62,
     tower: { p2: { x: -1.05 * G, z: tz }, p1: { x: 1.05 * G, z: tz } },
     cam: {
-      el: keys([68, 58, 52, 46, 41, 39, 38]),
+      el: keys([EL0, 51, 48, 45, 41, 39, 38]),
       az: keys([0, 4, 7, 9, 11, 12, 12]),
-      dist: keys([1800, 2000, 2100, 2120, 2060, 2020, 2000]),
+      dist: keys([PERSPECTIVE, 2000, 2100, 2120, 2060, 2020, 2000]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
       ty: keys([0, 20, 40, 70, 95, 100, 100]),
       tz: keys([0, 150, 280, 380, 430, 440, 442]),

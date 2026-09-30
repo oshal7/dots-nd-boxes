@@ -323,7 +323,8 @@ export default {
         const bursts = [];
         cfg.order.forEach((id, i) => { edgeDraw(B4, id, t, TT.snaps[i], LINE[pids[i]], { preview: i === 0 ? 14.9 : null }); bursts.push(...sparkBursts(B4, id, TT.snaps[i], LINE[pids[i]], 31 + i * 5)); });
         const cap = TT.snaps[3];
-        B4.setBox(cfg.box, { p: t >= cap ? Board.fillP(t, cap) : 0, color: FILL.p4, opacity: 0.82 + 0.18 * bump(t, cap + 0.05, 0.6), mark: 'S', markP: Board.markP(t, cap) });
+        B4.setBox(cfg.box, { p: t >= cap ? Board.fillP(t, cap) : 0, color: FILL.p4, opacity: 1, mark: 'S', markP: Board.markP(t, cap) });
+        B4.boxes.get(cfg.box).fill.style.filter = `brightness(${1 + 0.12 * bump(t, cap + 0.05, 0.4)})`;
         bursts.push(...confetti(B4, cfg.box, cap + 0.02, 77));
         g4.sparks.draw(t, bursts);
         cardStates(g4.cards, TT.turns, t, [['p4', cap + 0.02, 0, 1]]);
@@ -350,9 +351,10 @@ export default {
       if (t >= 19.7 && t < 21.3) {
         const Bai = ai.board;
         aiPre.forEach(([id, pid]) => Bai.setEdge(id, { p: 1, color: LINE[pid] }));
-        Bai.setBox('b_1_0', { p: 1, color: FILL.p1, mark: 'M', markP: 1 });
+        Bai.setBox('b_1_0', { p: 1, color: FILL.p1, opacity: 1, mark: 'M', markP: 1 });
         edgeDraw(Bai, aiMove, t, TT.aiSnap, LINE.p2);
-        Bai.setBox(aiBox, { p: t >= TT.aiSnap ? Board.fillP(t, TT.aiSnap) : 0, color: FILL.p2, opacity: 0.82 + 0.18 * bump(t, TT.aiSnap + 0.05, 0.6), mark: 'C', markP: Board.markP(t, TT.aiSnap) });
+        Bai.setBox(aiBox, { p: t >= TT.aiSnap ? Board.fillP(t, TT.aiSnap) : 0, color: FILL.p2, opacity: 1, mark: 'C', markP: Board.markP(t, TT.aiSnap) });
+        Bai.boxes.get(aiBox).fill.style.filter = `brightness(${1 + 0.12 * bump(t, TT.aiSnap + 0.05, 0.4)})`;
         ai.sparks.draw(t, [...sparkBursts(Bai, aiMove, TT.aiSnap, LINE.p2, 91), ...confetti(Bai, aiBox, TT.aiSnap + 0.02, 101)]);
         cardStates(ai.cards, [[0, 'p2']], t, [['p2', TT.aiSnap + 0.02, 0, 1]]);
         ai.cards.p1.scoreEl.textContent = 1;

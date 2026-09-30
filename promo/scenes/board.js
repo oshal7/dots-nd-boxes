@@ -10,11 +10,11 @@ import { hand, TILT_DEG, PERSPECTIVE } from '../shared/handoff.js';
 // ---------- easing ----------
 const CSS_OUT = cssBezier(0, 0, 0.58, 1);          // CSS 'ease-out' (the game's float-up)
 const CSS_IO = cssBezier(0.42, 0, 0.58, 1);         // CSS 'ease-in-out' (the game's shake)
-const PULL = cssBezier(0.62, 0, 0.1, 1);            // slow start, fast middle, long soft landing
+const PULL = cssBezier(0.6, 0, 0.24, 1);            // slow start, fast middle, soft landing
 const PUSH = cssBezier(0.5, 0, 0.1, 1);
 const GLIDE = cssBezier(0.45, 0, 0.2, 1);
 const WHIP = cssBezier(0.78, 0, 0.22, 1);
-const LAND = cssBezier(0.33, 0, 0.1, 1);
+const LAND = cssBezier(0.22, 0, 0.1, 1);
 const SINE = (x) => 0.5 - 0.5 * Math.cos(Math.PI * x);
 const inQuart = (x) => x * x * x * x;
 
@@ -33,9 +33,10 @@ function keysE(t, ks) {
 
 // ---------- film times ----------
 const T_STROKE = 0.8, T_HATCH0 = 0.9, T_HATCH1 = 1.13, T_PULL = 1.1;
-const T_SW0 = 2.12, T_SW1 = 2.86;                   // paper → app sweep
+const T_SW0 = 2.04, T_SW1 = 2.8;                   // paper → app sweep
 const T_TILT0 = 9.3, T_END = 10.0;
-const MOVE_T = [null, 4.25, 4.9, 5.75, 7.0, 7.3, 7.6, 7.9];   // moves 1..7 (move 0 is the pen stroke)
+const MOVE_T = [null, 4.25, 4.9, 5.75, 7.12, 7.36, 7.58, 7.77];
+const GROW = 0.12;                                            // chain: tap → stroke grows 120 ms → snap + fill   // moves 1..7 (move 0 is the pen stroke)
 const AUTO_T0 = 8.4, AUTO_DT = 0.075;                         // moves 8..21
 const PREVIEW = { 1: 3.98, 2: 4.62, 3: 5.42 };                 // dashed preview start for the tapped moves
 
@@ -52,28 +53,28 @@ export default {
     const moves = game.moves.map((m, i) => ({ ...m, i, t: i === 0 ? null : i < 8 ? MOVE_T[i] : AUTO_T0 + (i - 8) * AUTO_DT }));
 
     // ---------------- layout per aspect ----------------
-    const FB = [(W / 2 - BB.x) / G0, (H / 2 - BB.y) / G0];      // camera focus (grid) that puts the board on B at scale 1
-    const FC = [(W / 2 - CB.x) / G0, (H / 2 - CB.y) / G0];      // … on C
+    const FB = [(W / 2 - BB.x) / BB.gap, (H / 2 - BB.y) / BB.gap];      // camera focus (grid) that puts the board on B at scale 1
+    const FC = [(W / 2 - CB.x) / CB.gap, (H / 2 - CB.y) / CB.gap];      // … on C
     const L = V ? {
       // [t, [screenGap, focusCol, focusRow], ease]
       cam: [
         [0.0, [400, 1.667, 1.62]],
         [T_PULL, [409, 1.66, 1.61], SINE],
         [2.0, [BB.gap, FB[0], FB[1]], PULL],
-        [4.0, [BB.gap * 1.04, FB[0] + 0.02, FB[1] - 0.04], SINE],
+        [4.0, [BB.gap * 1.08, FB[0] + 0.03, FB[1] - 0.06], SINE],
         [4.45, [330, 1.57, 1.05], PUSH],
         [4.95, [330, 1.55, 1.25], GLIDE],
         [5.2, [334, 1.55, 1.29], SINE],
         [5.65, [420, 1.5, 2.3], GLIDE],
         [6.7, [431, 1.5, 2.29], SINE],
-        [7.05, [380, 3.0, 2.68], WHIP],
+        [7.0, [380, 3.0, 2.68], WHIP],
         [8.4, [368, 3.06, 2.86], SINE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
       w1: { x: 64, y: 96, size: 176 }, w2: { r: 1016, y: 1650, size: 176 },
       head: { cx: 540, y1: 132, size: 150 },
       w3: { r: 1016, y: 176, size: 168 }, w4: { x: 64, y: 176, size: 168 },
-      cardsW: 840, cardsAt: (h) => ({ x: CB.x, y: CB.y + 4 * G0 + 44 }), cardsHud: (h) => ({ x: CB.x, y: H - 70 - h }), cardsFrom: 60,
+      cardsW: 840, cardsW02: 840, cardsS02: (h, c) => ({ x: proj(P(0, 0), c).x, y: proj(P(0, 4), c).y + 42 }), cardsHud: (h) => ({ x: CB.x, y: H - 70 - h }), cardsFrom: 60,
       pill: { c: 1.5, r: 3.0, dx: 0, dy: 86, scale: 2.6 },
       combo: (cam, pr) => ({ x: pr(P(3, 2)).x, y: pr(P(3, 2)).y - 150 }), comboSizes: [104, 124, 146, 168],
       penAngle: 21, penScale: 0.9, float1: 130, runSize: 74,
@@ -82,25 +83,24 @@ export default {
         [0.0, [435, 1.70, 1.333]],
         [T_PULL, [446, 1.69, 1.32], SINE],
         [2.0, [BB.gap, FB[0], FB[1]], PULL],
-        [4.0, [BB.gap * 1.04, FB[0] + 0.05, FB[1] - 0.03], SINE],
+        [4.0, [BB.gap * 1.09, FB[0] + 0.12, FB[1] - 0.02], SINE],
         [4.45, [315, 1.5, 0.62], PUSH],
         [4.95, [305, 1.42, 1.34], GLIDE],
         [5.2, [309, 1.43, 1.37], SINE],
         [5.65, [420, 1.5, 2.5], GLIDE],
         [6.7, [432, 1.52, 2.48], SINE],
-        [7.05, [370, 2.67, 2.93], WHIP],
-        [8.4, [358, 3.08, 2.99], SINE],
+        [7.0, [330, 2.42, 2.64], WHIP],
+        [8.4, [322, 2.52, 2.68], SINE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
       w1: { x: 84, y: 54, size: 180 }, w2: { r: 1836, y: 872, size: 180 },
       head: { x: 118, y1: 404, size: 150 },
       w3: { r: 1836, y: 886, size: 170 }, w4: { x: 84, y: 886, size: 170 },
-      cardsW: 600, cardsAt: (h) => ({ x: CB.x, y: CB.y - 30 - h }), cardsS02: (h) => ({ x: BB.x, y: BB.y - 30 - h }), cardsHud: (h) => ({ x: 60, y: 46 }), cardsFrom: -60,
+      cardsW: 600, cardsW02: 760, cardsS02: (h, c) => ({ x: proj(P(2, 0), c).x - 380, y: proj(P(0, 0), c).y - 24 - h }), cardsHud: (h) => ({ x: 60, y: 46 }), cardsFrom: -60,
       pill: { c: 2.0, r: 3.0, dx: 1, dy: 70, scale: 2.4 },
-      combo: (cam, pr) => ({ x: pr(P(3, 3)).x, y: 132 }), comboSizes: [100, 120, 142, 166],
+      combo: (cam, pr) => ({ x: pr(P(3, 3)).x, y: Math.max(pr(P(3, 2)).y - 130, 175) }), comboSizes: [100, 120, 142, 166],
       penAngle: 12.5, penScale: 1, float1: 130, runSize: 76,
     };
-    if (!L.cardsS02) L.cardsS02 = L.cardsAt;
 
     // ---------------- camera ----------------
     const CAMK = L.cam.map(([t, [g, c, r], e]) => [t, [Math.log(g), c, r], e]);
@@ -115,10 +115,11 @@ export default {
     const root = svg('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }); css(root, { position: 'absolute', left: 0, top: 0 });
     tiltEl.appendChild(root);
     const defs = svg('defs', {}, root);
-    const ghostG = svg('g', {}, root);
     const camG = svg('g', {}, root);
-    const world = svg('g', { id: 'bd-world' }, camG);
-    const ghosts = [0, 1, 2].map(() => svg('use', { href: '#bd-world', opacity: 0 }, ghostG));
+    const blurG = svg('g', {}, camG);
+    const world = svg('g', { id: 'bd-world' }, blurG);
+    const mblurF = svg('filter', { id: 'bd-mblur', x: '-15%', y: '-15%', width: '130%', height: '130%' }, defs);
+    const mblur = svg('feGaussianBlur', { stdDeviation: '0 0' }, mblurF);
 
     const vignette = div('', layer); css(vignette, { position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 75% 70% at 46% 46%, rgba(120,92,52,0) 55%, rgba(120,92,52,0.16) 100%)' });
     const dim = div('', layer); css(dim, { position: 'absolute', inset: 0 });
@@ -221,7 +222,7 @@ export default {
     const edgeInfo = new Map();   // edge → {by, t0, preview}
     for (const [id, by] of E0) edgeInfo.set(id, { by, t0: sweepT(bd.edgeMid(id).x) });
     edgeInfo.set('v_1_2', { by: 'p1', t0: sweepT(bd.edgeMid('v_1_2').x) });
-    for (const m of moves) if (m.i > 0) edgeInfo.set(m.edge, { by: m.by, t0: m.t, preview: PREVIEW[m.i] });
+    for (const m of moves) if (m.i > 0) edgeInfo.set(m.edge, { by: m.by, t0: m.t, preview: PREVIEW[m.i], grow: m.i >= 4 && m.i <= 7 ? m.t - GROW : undefined });
     const boxInfo = new Map();
     const tB11 = sweepT(bd.boxCenter('b_1_1').x) - 0.04;
     boxInfo.set('b_1_1', { o: 'p1', t0: tB11 });
@@ -247,17 +248,19 @@ export default {
 
     // ---------------- words ----------------
     const HALO = `0 0 0.06em ${C.paper}, 0 0 0.14em ${C.paper}, 0 0 0.28em ${C.paper}, 0 0 0.5em rgba(247,242,231,0.9)`;
-    const mkWord = (parent, html, size, halo = true) => {
+    const mkWord = (parent, html, size, halo = true, plate = null) => {
       const e = div('cv', parent, html); css(e, { position: 'absolute', left: '0px', top: '0px', fontSize: size + 'px', willChange: 'transform' });
       if (halo) e.style.textShadow = HALO;
+      if (plate) css(e, plate);
       const r = e.getBoundingClientRect(); return { e, w: r.width, h: r.height };
     };
+    const PLATE = { background: 'rgba(247,242,231,0.92)', borderRadius: '0.22em', padding: '0.02em 0.16em 0.06em', boxShadow: '0 0 0.22em 0.2em rgba(247,242,231,0.92)' };
     const ACC = (s) => `<span style="color:${C.accentInk}">${s}</span>`;
     const w1 = mkWord(wordsL, 'Remember', L.w1.size), w2 = mkWord(wordsL, 'this game?', L.w2.size);
     const hd1 = mkWord(wordsL, 'Now in your', L.head.size, false), hd2 = mkWord(wordsL, ACC('browser.'), L.head.size, false);
     const hl = [hd1, hd2].map((w) => { const clip = div('', wordsL); css(clip, { position: 'absolute', left: 0, top: 0, overflow: 'hidden', width: w.w + 40 + 'px', height: w.h + 30 + 'px' });
       clip.appendChild(w.e); css(w.e, { left: '20px', top: '6px' }); return { ...w, clip }; });
-    const w3 = mkWord(wordsL, 'Draw ' + ACC('lines.'), L.w3.size), w4 = mkWord(wordsL, 'Close ' + ACC('boxes.'), L.w4.size);
+    const w3 = mkWord(wordsL, 'Draw ' + ACC('lines.'), L.w3.size, false, PLATE), w4 = mkWord(wordsL, 'Close ' + ACC('boxes.'), L.w4.size, false, PLATE);
 
     // ---------------- player cards ----------------
     const cardsWrap = div('', hud); css(cardsWrap, { position: 'absolute', left: 0, top: 0, width: '352px', display: 'flex', gap: '12px', transformOrigin: '0 0' });
@@ -265,23 +268,35 @@ export default {
     const leo = playerCard(cardsWrap, { name: game.players.p2.name, pid: 'p2', score: 0, active: false });
     for (const c of [mia, leo]) { c.el.style.flex = '1 1 0'; css(c.scoreEl, { display: 'inline-block', transformOrigin: '20% 60%' }); }
     const cardsNat = { w: 352, h: cardsWrap.getBoundingClientRect().height };
-    const cardsS = L.cardsW / cardsNat.w, cardsH = cardsNat.h * cardsS;
+    const cardsS = L.cardsW / cardsNat.w, cardsH = cardsNat.h * cardsS, cardsS02 = L.cardsW02 / cardsNat.w;
 
     // ---------------- status pill, floats, finger ----------------
     const pill = div('status-pill', hud, 'Bonus turn! 🔥'); css(pill, { position: 'absolute', left: 0, top: 0, transformOrigin: '50% 50%' });
     const pillR = pill.getBoundingClientRect();
-    const mkFloat = (text, size, color) => { const e = div('float-text', hud, text); css(e, { position: 'absolute', left: 0, top: 0, fontSize: size + 'px', color, textShadow: '0 0.04em 0.07em rgba(255,255,255,0.9), 0 0 0.2em rgba(255,255,255,0.55)', visibility: 'hidden' }); return e; };
+    const HALO2 = `0 0 0.03em ${C.paper}, 0 0 0.07em ${C.paper}, 0 0 0.12em ${C.paper}, 0 0 0.2em ${C.paper}, 0 0 0.32em rgba(247,242,231,0.95), 0 0 0.5em rgba(247,242,231,0.8)`;
+    const mkFloat = (text, size, color, style = 'plate') => { const e = div('float-text', hud, text);
+      css(e, { position: 'absolute', left: 0, top: 0, fontSize: size + 'px', color, textShadow: 'none', visibility: 'hidden' });
+      if (style === 'plate') css(e, PLATE); else if (style === 'halo') e.style.textShadow = HALO2; else e.style.textShadow = '0 0.03em 0.08em rgba(20,40,90,0.35)';
+      return e; };
     const floats = [];
-    // s04 "+1"
-    floats.push({ el: mkFloat(moves[3].plusText, L.float1, C.accentInk), t0: MOVE_T[3] + 0.04, life: 1.3, at: (t, c) => { const p = proj(P(2.3, 2.45), c); return { x: p.x, y: p.y, sc: c.s * G0 / 420 }; } });
+    // "+1" on every capture (main.js:584), solid accent-ink on a paper plate
+    [3, 4, 5, 6, 7].forEach((mi) => {
+      const bx = moves[mi].completed[0];
+      // s04: accent-ink on paper beside the box; chain: white on the solid blue fill (4.98:1), in the box's upper-right corner
+      const anchor = mi === 3 ? () => P(2.3, 2.45) : () => { const q = bd.boxCenter(bx); return { x: q.x + 0.29 * G0, y: q.y - 0.29 * G0 }; };
+      floats.push({ el: mi === 3 ? mkFloat(moves[mi].plusText, L.float1, C.accentInk) : mkFloat(moves[mi].plusText, L.float1 * 0.72, '#fff', 'white'), t0: moves[mi].t + (mi === 3 ? 0.04 : 0.1), life: mi === 3 ? 1.3 : 0.9, rise: mi === 3 ? 1 : 0.12,
+        at: (t, c) => { const p = proj(anchor(), c); return { x: p.x, y: p.y, sc: c.s * G0 / 420 }; } });
+    });
     // s05 chain combos: grow, shake, each replaced by the next in the same place
     [4, 5, 6, 7].forEach((mi, j) => {
       const until = mi < 7 ? MOVE_T[mi + 1] : 8.55;
-      floats.push({ el: mkFloat(moves[mi].comboText, L.comboSizes[j], C.accentInk), t0: moves[mi].t, life: 1.3, until, shake: 14, at: (t, c) => ({ ...L.combo(c, (p) => proj(p, c)), sc: 1 }) });
+      floats.push({ el: mkFloat(moves[mi].comboText, L.comboSizes[j], C.accentInk, 'halo'), t0: moves[mi].t, life: 0.8, until, shake: 14, rise: 0.2, at: (t, c) => ({ ...L.combo(c, (p) => proj(p, c)), sc: 1 }) });
     });
     const finger = div('', hud); css(finger, { position: 'absolute', left: 0, top: 0, width: '96px', height: '96px', borderRadius: '50%', background: 'rgba(56,53,47,0.16)', border: '4px solid rgba(255,255,255,0.95)', boxShadow: '0 10px 22px rgba(56,53,47,0.22), inset 0 0 0 2px rgba(56,53,47,0.08)' });
-    const ripple = div('', hud); css(ripple, { position: 'absolute', left: 0, top: 0, width: '100px', height: '100px', borderRadius: '50%', border: `5px solid ${C.accent}` });
-    const TAPS = [{ t: MOVE_T[1], edge: 'h_0_1' }, { t: MOVE_T[3], edge: 'v_2_2' }];
+    const ripples = [0, 1, 2].map(() => { const r = div('', hud); css(r, { position: 'absolute', left: 0, top: 0, width: '100px', height: '100px', borderRadius: '50%', border: `5px solid ${C.accent}` }); return r; });
+    // tap groups: one fingertip per group travels tap → tap
+    const TAPG = [[{ t: MOVE_T[1], edge: 'h_0_1' }], [{ t: MOVE_T[3], edge: 'v_2_2' }], [4, 5, 6, 7].map((i) => ({ t: MOVE_T[i] - GROW, edge: moves[i].edge }))];
+    const ALLTAPS = TAPG.flat();
 
     // ---------------- the pen (screen space) ----------------
     const pdefs = svg('defs', {}, penSvg);
@@ -313,8 +328,9 @@ export default {
     const floatState = (t, it) => {
       const a = t - it.t0; if (a < 0 || a > it.life || (it.until && t >= it.until)) return null;
       const u = a / it.life; let ty, sc, op;
-      if (u < 0.25) { const e = CSS_OUT(u / 0.25); ty = lerp(-50, -70, e); sc = lerp(0.4, 1.15, e); op = e; }
-      else { const e = CSS_OUT((u - 0.25) / 0.75); ty = lerp(-70, -180, e); sc = lerp(1.15, 1, e); op = 1 - e; }
+      if (u < 0.25) { const e = CSS_OUT(u / 0.25); ty = lerp(-50, -70, e); sc = lerp(0.4, 1.15, e); op = clamp(e * 1.6); }
+      else { const e = CSS_OUT((u - 0.25) / 0.75); ty = lerp(-70, -180, e); sc = lerp(1.15, 1, e); op = 1 - smooth(seg(u, 0.55, 1)); }
+      ty = -50 + (ty + 50) * (it.rise ?? 1);
       let dy = 0;
       if (it.until) { const x = seg(t, it.until - 0.09, it.until); op *= 1 - x; dy = -40 * x; sc *= 1 + 0.12 * x; }
       let dx = 0;
@@ -336,12 +352,15 @@ export default {
       if (t > T_TILT0) { const u = seg(t, T_TILT0, T_END); const e = 0.68 * smooth(u) + 0.32 * u * u; tiltEl.style.transform = `rotateX(${(TILT_DEG * e).toFixed(4)}deg)`; }
       else tiltEl.style.transform = 'none';
 
-      // ghosts (camera whip only)
-      const gw = t > 6.66 && t < 7.12;
-      for (let i = 0; i < 3; i++) {
-        if (!gw) { ghosts[i].setAttribute('opacity', 0); continue; }
-        const cp = cam(t - (i + 1) * 0.009), sp = Math.hypot(cp.fx - c.fx, cp.fy - c.fy) * c.s;
-        ghosts[i].setAttribute('transform', camTf(cp)); ghosts[i].setAttribute('opacity', [0.2, 0.12, 0.07][i] * clamp((sp - 4) / 24));
+      // directional motion blur on the whip (blur ∝ screen velocity, in world units)
+      {
+        let on = false;
+        if (t > 6.68 && t < 7.02) {
+          const cp = cam(t - 1 / 60), vx = (c.fx - cp.fx) * c.s, vy = (c.fy - cp.fy) * c.s;
+          const bx = 0.55 * Math.abs(vx) / c.s, by = 0.55 * Math.abs(vy) / c.s;
+          if (bx + by > 0.6 / c.s) { on = true; mblur.setAttribute('stdDeviation', `${bx.toFixed(2)} ${by.toFixed(2)}`); }
+        }
+        if (on) blurG.setAttribute('filter', 'url(#bd-mblur)'); else blurG.removeAttribute('filter');
       }
 
       // paper grain + vignette
@@ -378,20 +397,21 @@ export default {
           const inf = edgeInfo.get(id);
           if (!inf) { bd.clearEdge(id); continue; }
           if (t >= inf.t0) bd.setEdge(id, { p: 1, color: LINE[inf.by], w: Board.snapW(t, inf.t0) });
+          else if (inf.grow !== undefined && t >= inf.grow) bd.setEdge(id, { p: outCubic(seg(t, inf.grow, inf.t0)), color: LINE[inf.by], w: 0.75 });
           else if (inf.preview !== undefined && t >= inf.preview) bd.setEdge(id, { p: 1, color: C.accent, w: 6 / 6.5, dash: true, dashOffset: -20 * t, opacity: 0.75 * smooth(seg(t, inf.preview, inf.preview + 0.12)) });
           else if (inf.preview === undefined && inf.t0 <= T_SW1 + 0.3) bd.setEdge(id, { p: 1, color: LINE[inf.by], w: Board.snapW(t, inf.t0) });
           else bd.clearEdge(id);
         }
         for (const [id] of bd.boxes) {
           const b = boxInfo.get(id);
-          if (b && t >= b.t0) bd.setBox(id, { p: Board.fillP(t, b.t0), color: FILL[b.o], opacity: 0.82, mark: marks[b.o], markP: Board.markP(t, b.t0) });
+          if (b && t >= b.t0) bd.setBox(id, { p: Board.fillP(t, b.t0), color: FILL[b.o], opacity: 1, mark: marks[b.o], markP: Board.markP(t, b.t0) });
           else bd.setBox(id, { p: 0, mark: '' });
         }
       }
       sparks.draw(t, bursts);
 
       // ---- focus dim (neighbours soften while a macro is on one spot) ----
-      const dA = 0.42 * smooth(seg(t, 4.3, 4.6)) * (1 - smooth(seg(t, 8.35, 8.8)));
+      const dA = 0; // focus dim removed: it lightened the solid fills (white-mark contrast)
       show(dim, dA > 0.001);
       if (dA > 0.001) {
         const fk = keysE(t, [[4.3, [1.5, 0.0, 1.3]], [4.6, [1.5, 0.05, 1.3]], [5.05, [1.2, 1.35, 1.9], GLIDE], [5.3, [1.25, 1.4, 1.9]], [5.7, [1.5, 2.5, 1.05], GLIDE], [6.7, [1.5, 2.5, 1.1]], [7.05, [3.0, 3.0, 1.7], WHIP], [8.4, [3.0, 3.0, 1.8]]]);
@@ -415,7 +435,7 @@ export default {
         if (on) hl.forEach((h, i) => {
           const a = outQuint(seg(t, 2.16 + i * 0.09, 2.72 + i * 0.09)), o = inCubic(seg(t, 3.5 + i * 0.05, 3.8 + i * 0.05));
           const baseX = V ? L.head.cx - h.w / 2 - 20 : L.head.x - 20, baseY = L.head.y1 + i * h.h * 0.98 - 6;
-          h.clip.style.transform = `translate(${baseX + 8 * (t - 2.2) - o * (baseX + h.w + 120)}px,${baseY}px)`;
+          h.clip.style.transform = `translate(${baseX + 24 * (t - 2.2) - o * (baseX + h.w + 120)}px,${baseY}px)`;
           h.e.style.transform = `translateY(${(1 - a) * (h.h + 30)}px)`;
         });
       }
@@ -431,14 +451,13 @@ export default {
 
       // ---- player cards ----
       {
-        const on = t > 2.2 && t < 9.72; show(cardsWrap, on);
+        const on = t > 2.2 && t < 9.62; show(cardsWrap, on);
         if (on) {
-          const pS = L.cardsS02(cardsH), pH = L.cardsHud(cardsH), pE = L.cardsAt(cardsH);
-          const toHud = GLIDE(seg(t, 4.0, 4.5)), back = smooth(seg(t, 9.0, 9.45));
-          const tl = proj(P(0, 0), c), att = V ? { x: tl.x, y: proj(P(0, 4), c).y + 44 } : { x: tl.x, y: tl.y - 30 - cardsH };
-          const x = lerp(lerp(pS.x, pH.x, toHud), att.x, back), y = lerp(lerp(pS.y, pH.y, toHud), att.y, back);
-          const fade = 1 - smooth(seg(t, 9.4, 9.7));
-          css(cardsWrap, { transform: `translate(${x}px,${y}px) scale(${cardsS})`, opacity: fade });
+          const toHud = GLIDE(seg(t, 4.0, 4.5)), cs = lerp(cardsS02, cardsS, toHud) * (V ? 1 : lerp(1, 0.78, GLIDE(seg(t, 8.4, 8.9))));
+          const pS = L.cardsS02(cardsNat.h * cardsS02, cam(Math.min(t, 4.0))), pH = L.cardsHud(cardsH);
+          const x = lerp(pS.x, pH.x, toHud), y = lerp(pS.y, pH.y, toHud);
+          const fade = 1 - smooth(seg(t, 9.3, 9.6));
+          css(cardsWrap, { transform: `translate(${x}px,${y}px) scale(${cs})`, opacity: fade });
           [mia, leo].forEach((cd, i) => { const a = outCubic(seg(t, 2.24 + i * 0.08, 2.7 + i * 0.08)); css(cd.el, { transform: `translateY(${(1 - a) * L.cardsFrom}px)`, opacity: clamp(a * 1.6) }); });
           const st = stateAt(t);
           const sc = st ? st.scores : { p1: 0, p2: 0 };
@@ -466,23 +485,29 @@ export default {
         const p = it.at(t, c);
         css(it.el, { transform: `translate(${p.x + s.dx}px,${p.y + s.dy}px) translate(-50%,${s.ty}%) scale(${s.sc * p.sc})`, opacity: s.op * (1 - smooth(seg(t, 9.55, 9.7))) });
       }
-      // ---- finger taps ----
+      // ---- finger taps (the fingertip stays on the contact point while the ripple expands) ----
       {
-        let fOn = false, rOn = false;
-        for (const tp of TAPS) {
-          const u0 = tp.t - 0.3, u1 = tp.t + 0.42;
-          if (t >= u0 && t <= u1) {
-            fOn = true; const m = proj(bd.edgeMid(tp.edge), c);
-            const inn = outCubic(seg(t, u0, tp.t - 0.02)), out = inCubic(seg(t, tp.t + 0.1, u1));
-            const press = 1 - 0.14 * Math.sin(Math.PI * seg(t, tp.t - 0.04, tp.t + 0.1));
-            const off = (1 - inn) * 1 + out * 1.1;
-            css(finger, { transform: `translate(${m.x - 48 + off * 240}px,${m.y - 48 + off * 280}px) scale(${press * lerp(1.15, 1, inn)})`, opacity: clamp(inn * 2) * (1 - out) });
-          }
-          const ru = seg(t, tp.t, tp.t + 0.5);
-          if (ru > 0 && ru < 1) { rOn = true; const m = proj(bd.edgeMid(tp.edge), c); const sc = lerp(0.6, 2.6, outCubic(ru));
-            css(ripple, { transform: `translate(${m.x - 50}px,${m.y - 50}px) scale(${sc})`, opacity: 0.8 * (1 - ru) }); }
+        let fOn = false;
+        for (const grp of TAPG) {
+          const u0 = grp[0].t - 0.3, u1 = grp.at(-1).t + 0.5;
+          if (t < u0 || t > u1) continue;
+          fOn = true;
+          let m, off = 0, press = 1, inn = 1, out = 0;
+          const pts = grp.map((tp) => proj(bd.edgeMid(tp.edge), c));
+          if (t <= grp[0].t) { inn = outCubic(seg(t, u0, grp[0].t - 0.02)); off = 1 - inn; m = pts[0]; }
+          else if (t >= grp.at(-1).t) { out = inCubic(seg(t, grp.at(-1).t + 0.2, u1)); off = out * 1.1; m = pts.at(-1); }
+          else { let i = 0; while (i < grp.length - 1 && t >= grp[i + 1].t) i++; const k = GLIDE(seg(t, grp[i].t + 0.03, grp[i + 1].t - 0.02)); m = { x: lerp(pts[i].x, pts[i + 1].x, k), y: lerp(pts[i].y, pts[i + 1].y, k) }; }
+          for (const tp of grp) press = Math.min(press, 1 - 0.16 * Math.sin(Math.PI * seg(t, tp.t - 0.04, tp.t + 0.08)));
+          css(finger, { transform: `translate(${m.x - 48 + off * 240}px,${m.y - 48 + off * 280}px) scale(${press * lerp(1.15, 1, inn)})`, opacity: clamp(inn * 2) * (1 - out) });
         }
-        show(finger, fOn); show(ripple, rOn);
+        show(finger, fOn);
+        let ri = 0;
+        for (const tp of ALLTAPS) {
+          const ru = seg(t, tp.t, tp.t + 0.5);
+          if (ru > 0 && ru < 1 && ri < ripples.length) { const m = proj(bd.edgeMid(tp.edge), c); const sc = lerp(0.6, 2.6, outCubic(ru));
+            css(ripples[ri], { transform: `translate(${m.x - 50}px,${m.y - 50}px) scale(${sc})`, opacity: 0.8 * (1 - ru) }); show(ripples[ri], true); ri++; }
+        }
+        for (; ri < ripples.length; ri++) show(ripples[ri], false);
       }
 
       // ---- pen ----
