@@ -45,7 +45,8 @@ I0 = meas(mus)[0]; mus *= 10 ** ((MUSIC_LUFS - I0) / 20)
 mono = mus.mean(1)
 # ---- effects ----
 plan = json.loads(Path(plan_p).read_text()) if Path(plan_p).exists() else []
-fx = np.zeros_like(mus); HB = butter(4, [2000, 8000], btype='band', fs=SR, output='sos'); rep = []; last_t = -9
+fx = np.zeros_like(mus); HB = butter(4, [2000, 8000], btype='band', fs=SR, output='sos'); rep = []
+ev = []  # pass 1: solve each event's gain and its own cap
 for name, t, *note in sorted(plan, key=lambda r: r[1]):
     s = load(P / f'assets/sfx/{name}.wav', 1)[:, 0]
     s = s[np.argmax(np.abs(s) > 0.01 * np.abs(s).max()):]  # trim to onset so the sound starts on its cue
@@ -57,20 +58,28 @@ for name, t, *note in sorted(plan, key=lambda r: r[1]):
     i0 = int(t * SR); W = min(len(s), int(.3 * SR)); base = mono[i0:i0 + W]
     if len(base) < W: base = np.pad(base, (0, W - len(base)))
     b_in = pk50(sosfilt(sos, base)); b_hf = pk50(sosfilt(HB, base)); b_rms = rms150(base); b_pk = db(np.max(base ** 2))
-    g = 0.0; why = 'target'
+    g = 0.0; why = 'target'; cap = np.inf
     for x in np.geomspace(.003, 2.0, 200):
         mix = base + x * s[:W]
-        if pk50(sosfilt(HB, mix)) - b_hf > HF_CAP: why = 'hf-cap'; break
-        if db(np.max((x * s[:W]) ** 2)) > b_pk + PK_CAP: why = 'peak-cap'; break
-        if rms150(x * s[:W]) > b_rms - 1.0: why = 'under-music'; break
+        if pk50(sosfilt(HB, mix)) - b_hf > HF_CAP: why = 'hf-cap'; cap = g; break
+        if db(np.max((x * s[:W]) ** 2)) > b_pk + PK_CAP: why = 'peak-cap'; cap = g; break
+        if rms150(x * s[:W]) > b_rms - 1.0: why = 'under-music'; cap = g; break
         g = x
         if pk50(sosfilt(sos, mix)) - b_in >= TARGET: why = 'target'; break
-    if t - last_t < 0.15: g *= 0.6; why += '+cluster'
-    last_t = t
+    ev.append(dict(name=name, t=t, note=note, s=s, sos=sos, W=W, base=base, b_in=b_in, b_hf=b_hf, b_rms=b_rms, g=g, cap=cap, why=why))
+# pass 2: repeated sounds stay consistent (kit rule 3): each takes its type's median gain, never above its own cap
+for e in ev:
+    med = float(np.median([x['g'] for x in ev if x['name'] == e['name']]))
+    e['g'] = min(med, e['cap']); e['why'] += '/median'
+last_t = -9
+for e in ev:
+    if e['t'] - last_t < 0.15: e['g'] *= 0.6; e['why'] += '+cluster'
+    last_t = e['t']
+    i0 = int(e['t'] * SR); s = e['s']; g = e['g']; W = e['W']
     j1 = min(N, i0 + len(s)); fx[i0:j1] += (g * s[:j1 - i0])[:, None]
-    mix = base + g * s[:W]
-    rep.append(f"{t:6.2f}s {name:12s} gain {g:6.3f} in-band +{pk50(sosfilt(sos, mix)) - b_in:4.1f} dB  2-8k +{pk50(sosfilt(HB, mix)) - b_hf:4.1f} dB  "
-               f"fx-rms vs music {rms150(g * s[:W]) - b_rms:5.1f} dB  [{why}] {' '.join(map(str, note))}")
+    mix = e['base'] + g * s[:W]
+    rep.append(f"{e['t']:6.2f}s {e['name']:12s} gain {g:6.3f} in-band +{pk50(sosfilt(e['sos'], mix)) - e['b_in']:4.1f} dB  2-8k +{pk50(sosfilt(HB, mix)) - e['b_hf']:4.1f} dB  "
+               f"fx-rms vs music {rms150(g * s[:W]) - e['b_rms']:5.1f} dB  [{e['why']}] {' '.join(map(str, e['note']))}")
 # ---- bus ----
 def master(x):
     lim = P / 'renders/_bus.wav'; write(lim, x)

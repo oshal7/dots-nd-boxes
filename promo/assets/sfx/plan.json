@@ -1,20 +1,132 @@
 [
- ["whoosh-short", 1.10, "s01 pull-back"],
- ["whoosh-short", 3.95, "s02 push-in"],
- ["click-soft", 4.25, "s03 tap"],
- ["pop", 5.75, "s04 capture"],
- ["whoosh-short", 6.70, "s04 whip to chain"],
- ["pop", 7.10, "chain 2x"], ["pop", 7.40, "chain 3x"], ["pop", 7.70, "chain 4x"], ["pop", 8.00, "chain 5x"],
- ["whoosh-short", 8.40, "s05 pull-back"],
- ["chime", 12.60, "Mia Wins!"],
- ["whoosh-short", 13.50, "tower fly-through"],
- ["whoosh-short", 15.10, "circle reveal"],
- ["pop", 17.95, "Sam closes box"],
- ["whoosh-short", 18.40, "screen swipe"],
- ["click-soft", 18.90, "tap Hard"],
- ["pop", 20.20, "Computer closes box"],
- ["whoosh-short", 20.80, "pull back to two phones"],
- ["click-soft", 22.60, "Join Room tap"],
- ["whoosh-short", 23.90, "push into line"],
- ["chime", 25.90, "mark box pop"]
+ [
+  "whoosh-short",
+  1.55,
+  "s01 pull-back (peak speed)"
+ ],
+ [
+  "whoosh-short",
+  4.1,
+  "s03 push into the board"
+ ],
+ [
+  "click-soft",
+  4.25,
+  "tap h_0_1"
+ ],
+ [
+  "pop",
+  5.75,
+  "Mia closes b_2_1"
+ ],
+ [
+  "whoosh-short",
+  6.85,
+  "whip to the chain"
+ ],
+ [
+  "pop",
+  7.12,
+  "2x"
+ ],
+ [
+  "pop",
+  7.36,
+  "3x"
+ ],
+ [
+  "pop",
+  7.58,
+  "4x"
+ ],
+ [
+  "pop",
+  7.77,
+  "5x"
+ ],
+ [
+  "whoosh-short",
+  8.6,
+  "pull back to the whole game"
+ ],
+ [
+  "chime",
+  12.6,
+  "Mia Wins!"
+ ],
+ [
+  "whoosh-short",
+  13.8,
+  "dive into the tower top"
+ ],
+ [
+  "whoosh-short",
+  15.3,
+  "circle reveal"
+ ],
+ [
+  "click-soft",
+  15.42,
+  "Mia's tap"
+ ],
+ [
+  "pop",
+  17.35,
+  "Sam closes the box"
+ ],
+ [
+  "whoosh-short",
+  18.4,
+  "back to menu"
+ ],
+ [
+  "click-soft",
+  18.85,
+  "Play vs Computer"
+ ],
+ [
+  "click-soft",
+  19.45,
+  "Hard"
+ ],
+ [
+  "pop",
+  20.35,
+  "Computer closes a box"
+ ],
+ [
+  "click-soft",
+  21.72,
+  "Create Room"
+ ],
+ [
+  "whoosh-short",
+  22.0,
+  "pull back to two phones"
+ ],
+ [
+  "click-soft",
+  22.6,
+  "Join Room"
+ ],
+ [
+  "click-soft",
+  23.1,
+  "Mia's online move"
+ ],
+ [
+  "pop",
+  23.56,
+  "move lands on Leo's board"
+ ],
+ [
+  "whoosh-short",
+  24.2,
+  "push into the line"
+ ],
+ [
+  "chime",
+  25.9,
+  "mark's box pops"
+ ]
 ]
