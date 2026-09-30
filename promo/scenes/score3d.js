@@ -186,7 +186,7 @@ export default {
     const restPose = (cb) => { const row = Math.floor(cb.n / 2), col = cb.n % 2; return { x: towers[cb.o].x + (col - 0.5) * s * L.colSign[cb.o], y: groundY + s * (row + 0.5), z: towers[cb.o].z }; };
     const topCube = lastOf.p1, faceR = restPose(topCube), face = new THREE.Vector3(faceR.x, faceR.y + s / 2, faceR.z);
 
-    const sph = (t) => ({ el: spline(t, L.cam.el) * Math.PI / 180, az: spline(t, L.cam.az) * Math.PI / 180, D: spline(t, L.cam.dist),
+    const sph = (t) => ({ el: spline(t, L.cam.el, L.elV0) * Math.PI / 180, az: spline(t, L.cam.az) * Math.PI / 180, D: spline(t, L.cam.dist),
       tgt: new THREE.Vector3(spline(t, L.cam.tx), spline(t, L.cam.ty), spline(t, L.cam.tz)) });
     const place = (tgt, el, az, D) => camera.position.set(tgt.x + D * Math.cos(el) * Math.sin(az), tgt.y + D * Math.sin(el), tgt.z + D * Math.cos(el) * Math.cos(az));
     function camPose(t) {

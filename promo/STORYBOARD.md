@@ -41,8 +41,8 @@ then it rotates to horizontal while becoming the mark's line; s12 centred column
 ## Handoffs (constants in shared/handoff.js — both sides import them)
 
 - **B** end s01 = start s02: 5×5 board; h gap 150 dot(0,0) (1000,240); v gap 210 (120,540).
-- **C** end s05 = start s06: h gap 150 dot(0,0) (660,240) (board centre = screen centre); v gap 210 (120,540).
-  Tilt 22° about the board centre (top edge receding), CSS `perspective: 1800px` with origin at the screen centre.
+- **C** end s05 = start s06: h gap 190 dot(0,0) (580,160) (board centre = screen centre); v gap 210 (120,540).
+  Tilt 30° about the board centre (top edge receding), CSS `perspective: 1800px` with origin at the screen centre.
   three.js camera at s06 t=0: fov = 2·atan((H/2)/1800), at distance 1800 px from the board plane, 1 world unit = 1 px.
   Acceptance: mean |Δ| over the board region between film frames 9.983 and 10.0 < 3/255.
 - **D** s07 → s08 reveal centre: h (960, 700); v (540, 1240).

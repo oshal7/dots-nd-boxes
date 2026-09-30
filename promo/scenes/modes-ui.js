@@ -233,7 +233,7 @@ export function lobbyCreatePage(screen, code, scroll = 0) {
   const f1 = div('mx-field', card); div('field-label', f1, 'Board size');
   const cs = div('chips', f1); ['4×4', '5×5', '6×6', '7×7'].forEach((c, i) => { const e = div('chip' + (i === 1 ? ' is-selected' : ''), cs, c); e.style.minWidth = '0'; });
   const f2 = div('mx-field', card); div('field-label', f2, 'Your name'); div('mx-input', f2, 'Mia');
-  div('btn btn--primary', card, 'Create Room');
+  const createBtn = div('btn btn--primary', card, 'Create Room');
   const share = div('mx-share', card);
   const box = div('room-code-box', share);
   div('room-code-label', box, 'Room code');
@@ -242,7 +242,7 @@ export function lobbyCreatePage(screen, code, scroll = 0) {
   const act = div('mx-actions', share); div('btn', act, 'Copy code'); div('btn', act, 'Copy link');
   const wait = div('mx-wait', share); const spin = div('mx-spin', wait); div('', wait, 'Waiting for opponent to join…');
   const fx = div('', p); css(fx, { position: 'absolute', left: '0', top: '0' });
-  return { page: p, card, letters, spin, box, fx };
+  return { page: p, card, letters, spin, box, fx, createBtn, share, act, wait };
 }
 
 export function lobbyJoinPage(screen, scroll = 0) {

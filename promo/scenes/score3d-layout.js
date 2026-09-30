@@ -1,14 +1,14 @@
 // score3d-layout.js — per-aspect layout, camera keys and a time spline for score3d.
 import { C, FILL } from '../shared/lib.js';
 
-/** Catmull-Rom (non-uniform time) through keys [[t, v], ...]; flat tangents at both ends. Pure function of t. */
-export function spline(t, ks) {
+/** Catmull-Rom (non-uniform time) through keys [[t, v], ...]; start slope m0 (units/s), flat at the end. Pure function of t. */
+export function spline(t, ks, slope0 = 0) {
   const n = ks.length;
   if (t <= ks[0][0]) return ks[0][1];
   if (t >= ks[n - 1][0]) return ks[n - 1][1];
   let i = 1; while (ks[i][0] < t) i++;
   const [t0, v0] = ks[i - 1], [t1, v1] = ks[i];
-  const tan = (j) => (j <= 0 || j >= n - 1) ? 0 : (ks[j + 1][1] - ks[j - 1][1]) / (ks[j + 1][0] - ks[j - 1][0]);
+  const tan = (j) => j === 0 ? slope0 : (j >= n - 1) ? 0 : (ks[j + 1][1] - ks[j - 1][1]) / (ks[j + 1][0] - ks[j - 1][0]);
   const h = t1 - t0, u = (t - t0) / h, m0 = tan(i - 1) * h, m1 = tan(i) * h;
   const u2 = u * u, u3 = u2 * u;
   return (2 * u3 - 3 * u2 + 1) * v0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * v1 + (u3 - u2) * m1;
@@ -20,10 +20,11 @@ const TK = [10.0, 10.8, 11.6, 12.3, 13.0, 13.5, 14.0];
 
 export function cfg(V, k) {
   const G = 150 * k;
+  const EL_V0 = -20; // °/s: the board module's CSS tilt is still moving ~20°/s at the 10.0 cut
   const cube = 0.7 * G;
   const base = {
     margin: 0.42 * G, slabT: 16 * k, baseH: 30 * k, baseOut: 22 * k, baseColor: C.ink,
-    cube, cubeR: 0.17 * cube, cubeColor: { p1: '#1d5cc7', p2: FILL.p2 },  // p1 steered so the LIT top face reads #2f6bd8
+    elV0: EL_V0, cube, cubeR: 0.17 * cube, cubeColor: { p1: '#1d5cc7', p2: FILL.p2 },  // p1 steered so the LIT top face reads #2f6bd8
     arc: 0.42 * cube + 20 * k, chipLift: 0.22 * cube,
     firstLaunch: 10.28, gap0: 0.19, gap1: 0.09,
     // key: big soft sun from upper-left-front (shadows fall right/back); warm rim behind-right; soft sky fill
@@ -38,14 +39,14 @@ export function cfg(V, k) {
       cam: {
         el: keys([68, 57, 50, 45, 40, 38, 37]),
         az: keys([0, 7, 13, 18, 22, 25, 26]),
-        dist: keys([1800, 1330, 1400, 1480, 1420, 1370, 1350]),
-        tx: keys([0, 70, 20, 20, 120, 160, 170]),
+        dist: keys([1800, 1330, 1400, 1490, 1550, 1500, 1480]),
+        tx: keys([0, 70, 20, 30, 115, 145, 155]),
         ty: keys([0, 50, 100, 150, 175, 185, 190]),
         tz: keys([0, 10, 20, 30, 45, 50, 52]),
       },
       winSize: 120, winFrom: -160,
       // to the left of Mia's chip, vertically centred on it
-      winPos: (W, H, sz, top, chip) => [top.x - chip.w / 2 - 70 - sz.w, top.y - chip.h / 2 - 10 * 1.3 - sz.h / 2],
+      winPos: (W, H, sz, top, chip) => [top.x - chip.w / 2 - 100 - sz.w, top.y - chip.h / 2 - 10 * 1.3 - sz.h / 2],
       s07Size: 220, s07Pos: (W, H, a, b) => [W / 2 - a.width / 2 - 170, 150, W / 2 - b.width / 2 + 170, 360],
     };
   }
@@ -55,9 +56,9 @@ export function cfg(V, k) {
     cam: {
       el: keys([68, 58, 52, 46, 41, 39, 38]),
       az: keys([0, 4, 7, 9, 11, 12, 12]),
-      dist: keys([1800, 2080, 2200, 2230, 2170, 2130, 2110]),
+      dist: keys([1800, 2000, 2100, 2120, 2060, 2020, 2000]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
-      ty: keys([0, 10, 20, 40, 60, 65, 66]),
+      ty: keys([0, 20, 40, 70, 95, 100, 100]),
       tz: keys([0, 150, 280, 380, 430, 440, 442]),
     },
     winSize: 132, winFrom: -160,

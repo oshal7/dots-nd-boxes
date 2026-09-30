@@ -131,7 +131,7 @@ export class Board {
   }
   clearEdge(id) { this.setEdge(id, { p: 0 }); }
   /** Radial capture fill (the game's liquid fill: r 0 → 0.85·GAP, cubic-bezier(0.22,1,0.36,1) over 0.42 s). */
-  setBox(id, { p = 1, color = C.p1, opacity = 0.82, mark = '', markP = 1 } = {}) {
+  setBox(id, { p = 1, color = C.p1, opacity = 1, mark = '', markP = 1 } = {}) {
     const b = this.boxes.get(id); if (!b) return;
     b.fill.setAttribute('r', this.gap * 0.85 * clamp(p)); b.fill.setAttribute('fill', color); b.fill.setAttribute('opacity', opacity);
     b.mark.textContent = mark;

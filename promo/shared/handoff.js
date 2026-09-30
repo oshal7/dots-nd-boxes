@@ -6,7 +6,7 @@ export const HANDOFF = {
   h: {
     W: 1920, H: 1080,
     B: { gap: 150, x: 1000, y: 240 },   // end of s01 (paper pull-back) = start of s02
-    C: { gap: 150, x: 660, y: 240 },    // end of s05 (pull back to whole board) = first frame of s06 (3D)
+    C: { gap: 190, x: 580, y: 160 },    // end of s05 (pull back to whole board) = first frame of s06 (3D)
     D: { x: 960, y: 700 },              // s07 circle reveal centre → s08
     L: { x1: 660, x2: 1260, y: 540, w: 75, markScale: 15 }, // end s10 line = mark's green line at s11 start
   },
@@ -24,7 +24,7 @@ export const hand = (V) => (V ? HANDOFF.v : HANDOFF.h);
 // receding, seen through CSS perspective PERSPECTIVE px with perspective-origin at the screen centre.
 // three.js equivalent: PerspectiveCamera(fov = 2·atan((H/2)/PERSPECTIVE) in degrees, W/H), placed PERSPECTIVE
 // world units (= px) in front of the board centre, board rotated by the same angle about the X axis.
-export const TILT_DEG = 22;
+export const TILT_DEG = 30;
 export const PERSPECTIVE = 1800;
 
 // Scene timing (film seconds). Every boundary is on the 0.5 s beat grid (120 BPM).

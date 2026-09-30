@@ -31,13 +31,13 @@ const TT = {
   miaTap: 15.42, snaps: [15.5, 16.15, 16.75, 17.35],
   turns: [[15.0, 'p1'], [15.76, 'p2'], [16.41, 'p3'], [17.01, 'p4']],
   passes: [[15.72, 16.08], [16.32, 16.68], [16.92, 17.28]],
-  exit1: 18.2, menuVs: 18.85, hard: 19.45, start: 19.7, aiSnap: 20.35, exit2: 20.8, menuOn: 21.35,
-  pull: [21.4, 22.15], codeFlip: [21.75, 22.2], rise: [21.6, 22.2], type: [22.22, 22.5], joinTap: 22.6,
-  miaOnTap: 23.1, travel: [23.14, 23.5], land: 23.5, push: [23.9, 24.5],
+  exit1: 18.2, menuVs: 18.85, hard: 19.45, start: 19.7, aiSnap: 20.35, exit2: 20.8, menuOn: 21.25, create: 21.72, codeShow: 21.78, waitShow: 21.95,
+  pull: [21.4, 22.15], rise: [21.6, 22.2], type: [22.22, 22.5], joinTap: 22.6,
+  miaOnTap: 23.1, travel: [23.14, 23.56], land: 23.56, push: [23.9, 24.5],
 };
 // screen pushes on phone 1: [t0, t1, from, to, dir] (dir −1 = back navigation)
 const NAV1 = [[18.25, 18.6, 'g4', 'menu', 1], [18.9, 19.25, 'menu', 'st', 1], [19.75, 20.1, 'st', 'ai', 1],
-  [20.85, 21.2, 'ai', 'menu', -1], [21.4, 21.75, 'menu', 'lc', 1], [22.65, 22.98, 'lc', 'on1', 1]];
+  [20.85, 21.2, 'ai', 'menu', -1], [21.3, 21.6, 'menu', 'lc', 1], [22.65, 22.98, 'lc', 'on1', 1]];
 const NAV2 = [[22.65, 22.98, 'lj', 'on2', 1]];
 
 export default {
@@ -57,7 +57,7 @@ export default {
       passOff: [{ x: -40, y: -18, ry: 5, rz: 3.5 }, { x: 40, y: 18, ry: -4, rz: -3 }, { x: -10, y: -8, ry: 2, rz: 1.5 }],
       E: { dx: 0, dy: -30, rx: 4, ry: -9, rz: 0 },
       lobbyScroll: -300, joinScroll: -64,
-      s10: { s: 2.3 / 2.2, p1: [540, 260 + 989], p2: [540, 980 + 989], r1: { rx: 0, ry: 6, rz: 0 }, r2: { rx: 0, ry: -6, rz: 0 } },
+      s10: { s: 2.3 / 2.2, p1: [540, 260 + 989], p2: [540, 1060 + 989], r1: { rx: 0, ry: 6, rz: 0 }, r2: { rx: 0, ry: -6, rz: 0 } },
       hx: { s08: { x: CX, y: 60, size: 150, align: 'center' }, chip: { x: CX, y: 250 }, s09: { x: CX, y: 96, size: 150 }, s10: { x: CX, y: 34, size: 124 } },
     } : {
       Z: 3.0, P: 4600,
@@ -67,8 +67,8 @@ export default {
       passOff: [{ x: -30, y: -30, ry: 6, rz: 3.5 }, { x: 60, y: 26, ry: -4, rz: -3 }, { x: 12, y: -10, ry: 2, rz: 1.5 }],
       E: { dx: 0, dy: 0, rx: 4, ry: -10, rz: 0 },
       lobbyScroll: 0, joinScroll: 0,
-      s10: { s: 0.465, p1: [560, 846], p2: [1360, 846], r1: { rx: 3, ry: 12, rz: 0 }, r2: { rx: 3, ry: -12, rz: 0 } },
-      hx: { s08: { x: 96, y: 300, size: 158, align: 'left' }, chip: { x: 100, y: 640 }, s09: { x: 96, y: 330, size: 140 }, s10: { x: CX, y: 30, size: 128 } },
+      s10: { s: 0.465, p1: [905, 846], p2: [1570, 846], r1: { rx: 3, ry: 12, rz: 0 }, r2: { rx: 3, ry: -12, rz: 0 } },
+      hx: { s08: { x: 96, y: 300, size: 158, align: 'left' }, chip: { x: 100, y: 640 }, s09: { x: 96, y: 330, size: 140 }, s10: { x: 96, y: 360, size: 128, align: 'left' } },
     };
     const Z = cfg.Z;
 
@@ -95,7 +95,7 @@ export default {
     const PAGES = { g4: g4.page, menu: menu.page, st: st.page, ai: ai.page, lc: lc.page, on1: on1.page, lj: lj.page, on2: on2.page };
     const SHADE = {}; for (const k in PAGES) SHADE[k] = div('mx-shade', PAGES[k]);
 
-    const rip = { g4: ripple(g4.pfx), menu: ripple(menu.fx), st: ripple(st.fx), ai: ripple(ai.pfx), lj: ripple(lj.fx), on1: ripple(on1.pfx) };
+    const rip = { g4: ripple(g4.pfx), menu: ripple(menu.fx), st: ripple(st.fx), ai: ripple(ai.pfx), lj: ripple(lj.fx), on1: ripple(on1.pfx), lc: ripple(lc.fx) };
     const f4 = floatText(g4.fx, '+1', BADGE.p4), fAi = floatText(ai.fx, '+1', BADGE.p2);
 
     const ov = svg('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }); layer.appendChild(ov);
@@ -120,7 +120,7 @@ export default {
     };
     const hS08 = mkHead(V ? ['Pass & Play'] : ['Pass &', 'Play'], cfg.hx.s08);
     const hS09 = mkHead(V ? ['vs Computer'] : ['vs', 'Computer'], { ...cfg.hx.s09, align: V ? 'center' : 'left', mask: true });
-    const hS10 = mkHead(['Play online'], { ...cfg.hx.s10, align: 'center' });
+    const hS10 = mkHead(V ? ['Play online'] : ['Play', 'online'], { ...cfg.hx.s10, align: V ? 'center' : 'left' });
     const chipWrap = div('', hud); css(chipWrap, { position: 'absolute', left: cfg.hx.chip.x + 'px', top: cfg.hx.chip.y + 'px', transformOrigin: V ? '50% 50%' : '0% 50%' });
     const chipZ = div('', chipWrap); chipZ.style.zoom = V ? 2.1 : 2.3;
     const chip = div('chip is-selected', chipZ, '2–4 players'); css(chip, { display: 'inline-flex', whiteSpace: 'nowrap', padding: '8px 16px' });
@@ -130,7 +130,7 @@ export default {
     const aiPre = [['h_1_0', 'p1'], ['h_2_0', 'p2'], ['v_1_0', 'p2'], ['v_1_1', 'p1'], ['h_0_2', 'p2'], ['h_1_2', 'p1'], ['v_0_3', 'p2'],
       ['h_0_1', 'p1'], ['h_2_3', 'p2'], ['v_2_2', 'p1'], ['h_4_1', 'p2'], ['v_3_0', 'p1'], ['h_3_3', 'p1'], ['h_3_1', 'p2']];
     const aiMove = 'v_0_2', aiBox = 'b_0_2';
-    const onPre = [['h_0_0', 'p1'], ['v_0_3', 'p2'], ['h_2_2', 'p1'], ['v_1_0', 'p2'], ['h_1_3', 'p2'], ['v_2_4', 'p1'], ['h_3_0', 'p1'], ['v_2_2', 'p2']];
+    const onPre = []; // a freshly joined room: empty 5×5 board, 0–0
     const onMove = 'h_1_1';
 
     // ---------------- helpers
@@ -363,12 +363,17 @@ export default {
       }
 
       // ---- s10 lobby → online
+      if (t < 21.3) { lc.box.style.opacity = 0; lc.act.style.opacity = 0; lc.wait.style.opacity = 0; }
       if (t >= 21.3) {
-        const [c0, c1] = TT.codeFlip; const n = lc.letters.length;
-        lc.letters.forEach((el, i) => {
-          const t0 = c0 + (i * (c1 - c0 - 0.14)) / (n - 1); const u = seg(t, t0, t0 + 0.22);
-          el.style.opacity = u <= 0 ? 0 : clamp(u * 3); el.style.transform = `perspective(200px) rotateX(${lerp(-95, 0, outBack(u, 2.2))}deg)`;
-        });
+        const n = lc.letters.length;
+        const cb = bump(t, TT.create - 0.05, 0.24);
+        lc.createBtn.style.transform = `translate(${cb * 2}px,${cb * 2}px)`; lc.createBtn.style.boxShadow = `${3 - 2 * cb}px ${3 - 2 * cb}px 0 ${C.accentInk}`;
+        rip.lc.draw(t, [tapAt(lc.page, lc.createBtn, TT.create, 36)]);
+        const ks = seg(t, TT.codeShow, TT.codeShow + 0.16);
+        lc.box.style.opacity = ks <= 0 ? 0 : 1; lc.box.style.transform = `scale(${ks <= 0 ? 0.9 : outBack(ks, 1.6) * 0.1 + 0.9})`;
+        lc.act.style.opacity = smooth(seg(t, TT.codeShow + 0.04, TT.codeShow + 0.2));
+        lc.letters.forEach((el) => { el.style.opacity = 1; el.style.transform = 'none'; });
+        lc.wait.style.opacity = smooth(seg(t, TT.waitShow, TT.waitShow + 0.2));
         lc.spin.style.transform = `rotate(${(t * 450) % 360}deg)`;
         const [y0, y1] = TT.type; const typed = t < y0 ? 0 : Math.min(n, 1 + Math.floor(((t - y0) / (y1 - y0)) * (n - 0.001)));
         const focused = t >= y0 - 0.2; const caretOn = Math.floor((t - 21.0) / 0.4) % 2 === 0 || (t >= y0 && t < y1 + 0.12);
@@ -384,7 +389,7 @@ export default {
           const t0 = host ? TT.miaOnTap + 0.02 : TT.land;
           if (host) edgeDraw(Bo, onMove, t, t0, LINE.p1);
           else if (t >= t0 && t < TT.push[0]) Bo.setEdge(onMove, { p: 1, color: LINE.p1, w: Board.snapW(t, t0) });
-          else if (t >= TT.push[0]) Bo.setEdge(onMove, { p: 1, color: LINE.p1 }); else Bo.clearEdge(onMove);
+          else Bo.clearEdge(onMove);
           g.sparks.draw(t, sparkBursts(Bo, onMove, t0, LINE.p1, host ? 141 : 151));
           cardStates(g.cards, [[0, 'p1'], [TT.land + 0.02, 'p2']], t);
         }
@@ -397,19 +402,28 @@ export default {
       const bursts = [];
       if (t >= TT.travel[0] && t < TT.land) {
         const a1 = center(E1[0]), b1 = center(E1[1]), a2 = center(E2[0]), b2 = center(E2[1]);
-        const k = outCubic(seg(t, TT.travel[0], TT.travel[1]));
-        const arc = Math.sin(Math.PI * k) * (V ? 90 : -90);
-        const ox = V ? arc : 0, oy = V ? 0 : arc;
-        const lift = 1 + 0.35 * Math.sin(Math.PI * k);
+        const k = 1 - Math.pow(1 - seg(t, TT.travel[0], TT.travel[1]), 2.4); // ease-out
         const m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 }, m2 = { x: (a2.x + b2.x) / 2, y: (a2.y + b2.y) / 2 };
-        const mx = lerp(m1.x, m2.x, k) + ox, my = lerp(m1.y, m2.y, k) + oy;
-        const hx = lerp((b1.x - a1.x) / 2, (b2.x - a2.x) / 2, k) * lift, hy = lerp((b1.y - a1.y) / 2, (b2.y - a2.y) / 2, k) * lift;
-        setLine(penLine, mx - hx, my - hy, mx + hx, my + hy, on1.board.stroke * Z * cam.s * lift, C.p1);
-        trail.setAttribute('x1', m1.x); trail.setAttribute('y1', m1.y); trail.setAttribute('x2', mx); trail.setAttribute('y2', my);
-        trail.setAttribute('stroke-width', 4 * Z * cam.s); trail.setAttribute('stroke-dasharray', `${6 * Z * cam.s} ${9 * Z * cam.s}`);
-        trail.setAttribute('opacity', 0.55);
+        const h1 = Math.hypot(b1.x - a1.x, b1.y - a1.y) / 2, h2 = Math.hypot(b2.x - a2.x, b2.y - a2.y) / 2;
+        const lift = 1 + 0.25 * Math.sin(Math.PI * k);
+        let mx, my, ang;
+        if (V) {
+          // around the left margin, outside both phones: a cubic through the side gutter; the segment turns upright there
+          const cx = -125, P0 = m1, P3 = m2, P1 = { x: cx, y: m1.y - 160 }, P2 = { x: cx, y: m2.y + 60 };
+          const u = k, v = 1 - u;
+          mx = v * v * v * P0.x + 3 * v * v * u * P1.x + 3 * v * u * u * P2.x + u * u * u * P3.x;
+          my = v * v * v * P0.y + 3 * v * v * u * P1.y + 3 * v * u * u * P2.y + u * u * u * P3.y;
+          ang = (Math.PI / 2) * Math.min(1, 1.5 * Math.sin(Math.PI * u));
+        } else {
+          mx = lerp(m1.x, m2.x, k); my = lerp(m1.y, m2.y, k) - 90 * Math.sin(Math.PI * k); ang = 0;
+          trail.setAttribute('x1', m1.x); trail.setAttribute('y1', m1.y); trail.setAttribute('x2', mx); trail.setAttribute('y2', my);
+          trail.setAttribute('stroke-width', 4 * Z * cam.s); trail.setAttribute('stroke-dasharray', `${6 * Z * cam.s} ${9 * Z * cam.s}`);
+          trail.setAttribute('opacity', 0.55);
+        }
+        const hl = lerp(h1, h2, k) * lift;
+        setLine(penLine, mx - Math.cos(ang) * hl, my - Math.sin(ang) * hl, mx + Math.cos(ang) * hl, my + Math.sin(ang) * hl, on1.board.stroke * Z * cam.s * lift, C.p1);
       }
-      if (t >= TT.land && t < TT.land + 0.3) { // the dotted trail fades from the origin toward the arrival
+      if (!V && t >= TT.land && t < TT.land + 0.3) { // the dotted trail fades from the origin toward the arrival
         const a1 = center(E1[0]), b1 = center(E1[1]), a2 = center(E2[0]), b2 = center(E2[1]); const f = smooth(seg(t, TT.land, TT.land + 0.3));
         const m1 = { x: (a1.x + b1.x) / 2, y: (a1.y + b1.y) / 2 }, m2 = { x: (a2.x + b2.x) / 2, y: (a2.y + b2.y) / 2 };
         trail.setAttribute('x1', lerp(m1.x, m2.x, f)); trail.setAttribute('y1', lerp(m1.y, m2.y, f)); trail.setAttribute('x2', m2.x); trail.setAttribute('y2', m2.y);
@@ -434,27 +448,31 @@ export default {
       grid.style.opacity = 0.9 * (1 - smooth(seg(t, TT.push[0] - 0.1, TT.push[0] + 0.3)));
 
       // ---- headlines: s08 from the left (x) · s09 from below (y) · s10 from the right (x)
+      // s08 → s09 → s10 hand straight over (outgoing leaves as the incoming starts; never both in one spot)
       hS08.els.forEach((e, i) => {
-        const ki = outExpo(seg(t, 15.42 + i * 0.06, 15.98 + i * 0.06)); const ko = inCubic(seg(t, 18.0 + i * 0.03, 18.26 + i * 0.03));
+        const ki = outExpo(seg(t, 15.42 + i * 0.06, 15.98 + i * 0.06)); const ko = inCubic(seg(t, 18.2 + i * 0.03, 18.42 + i * 0.03));
         const dx = V ? -W * 1.1 : -760;
         e.style.transform = `translateX(${dx * (1 - ki) + dx * 1.2 * ko}px) skewX(${-8 * (1 - ki) * (ki > 0 ? 1 : 0) + 10 * ko}deg)`;
       });
-      hS08.box.style.visibility = t < 15.42 || t > 18.32 ? 'hidden' : 'visible';
+      hS08.box.style.visibility = t < 15.42 || t > 18.48 ? 'hidden' : 'visible';
       {
-        const kc = seg(t, 15.78, 16.18); const sc = kc <= 0 ? 0 : outBack(kc, 2.0); const kco = inCubic(seg(t, 17.96, 18.2));
+        const kc = seg(t, 15.78, 16.18); const sc = kc <= 0 ? 0 : outBack(kc, 2.0); const kco = inCubic(seg(t, 18.16, 18.4));
         chipWrap.style.transform = `${V ? 'translateX(-50%) ' : ''}translateX(${(V ? -W : -700) * kco}px) scale(${sc})`;
         chipWrap.style.opacity = kc <= 0 ? 0 : clamp(kc * 3); chipWrap.style.visibility = kc <= 0 || kco >= 1 ? 'hidden' : 'visible';
       }
       hS09.els.forEach((e, i) => {
-        const ki = outQuint(seg(t, 18.55 + i * 0.07, 19.03 + i * 0.07)); const ko = inCubic(seg(t, 20.7 + i * 0.04, 20.94 + i * 0.04));
+        const ki = outQuint(seg(t, 18.44 + i * 0.07, 18.92 + i * 0.07)); const ko = inCubic(seg(t, 20.68 + i * 0.04, 20.9 + i * 0.04));
         e.style.transform = `translateY(${105 * (1 - ki) - 110 * ko}%)`;
       });
-      hS09.box.style.visibility = t < 18.55 || t > 21.02 ? 'hidden' : 'visible';
-      {
-        const e = hS10.els[0]; const ki = outExpo(seg(t, 22.1, 22.6)); const ko = inCubic(seg(t, 23.66, 23.88));
-        e.style.transform = `translate(${(V ? W : 900) * (1 - ki)}px, ${-260 * ko}px) skewX(${8 * (1 - ki) * (ki > 0 ? 1 : 0)}deg)`;
-        e.style.opacity = 1 - ko; hS10.box.style.visibility = t < 22.1 || t > 23.9 ? 'hidden' : 'visible';
-      }
+      hS09.box.style.visibility = t < 18.44 || t > 20.98 ? 'hidden' : 'visible';
+      // s10: 9:16 from the right at top centre; 16:9 from the left into the same left column as s08/s09
+      hS10.els.forEach((e, i) => {
+        const ki = outExpo(seg(t, 20.92 + i * 0.06, 21.42 + i * 0.06)); const ko = inCubic(seg(t, 23.66 + i * 0.03, 23.88 + i * 0.03));
+        const dx = V ? W : -800;
+        e.style.transform = `translate(${dx * (1 - ki)}px, ${-260 * ko}px) skewX(${(V ? 8 : -8) * (1 - ki) * (ki > 0 ? 1 : 0)}deg)`;
+        e.style.opacity = 1 - ko;
+      });
+      hS10.box.style.visibility = t < 20.92 || t > 23.95 ? 'hidden' : 'visible';
     }
     function setLine(el, x1, y1, x2, y2, w, col) {
       el.style.display = ''; el.setAttribute('x1', x1); el.setAttribute('y1', y1); el.setAttribute('x2', x2); el.setAttribute('y2', y2);
