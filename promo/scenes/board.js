@@ -67,16 +67,16 @@ export default {
         [5.2, [334, 1.55, 1.29], SINE],
         [5.65, [420, 1.5, 2.3], GLIDE],
         [6.7, [431, 1.5, 2.29], SINE],
-        [7.0, [380, 3.0, 2.68], WHIP],
-        [8.4, [368, 3.06, 2.86], SINE],
+        [7.0, [330, 2.54, 2.62], WHIP],
+        [8.4, [322, 2.56, 2.7], SINE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
       w1: { x: 64, y: 96, size: 176 }, w2: { r: 1016, y: 1650, size: 176 },
       head: { cx: 540, y1: 132, size: 150 },
       w3: { r: 1016, y: 176, size: 168 }, w4: { x: 64, y: 176, size: 168 },
       cardsW: 840, cardsW02: 840, cardsS02: (h, c) => ({ x: proj(P(0, 0), c).x, y: proj(P(0, 4), c).y + 42 }), cardsHud: (h) => ({ x: CB.x, y: H - 70 - h }), cardsFrom: 60,
-      pill: { c: 1.5, r: 3.0, dx: 0, dy: 86, scale: 2.6 },
-      combo: (cam, pr) => ({ x: pr(P(3, 2)).x, y: pr(P(3, 2)).y - 150 }), comboSizes: [104, 124, 146, 168],
+      pill: { c: 1.5, r: 3.5, dx: 0, dy: 0, scale: 4.0 },
+      combo: (cam, pr) => ({ x: pr(P(2.96, 2)).x, y: pr(P(3, 1.5)).y }), comboSizes: [80, 92, 106, 118],
       penAngle: 21, penScale: 0.9, float1: 130, runSize: 74,
     } : {
       cam: [
@@ -93,12 +93,12 @@ export default {
         [8.4, [322, 2.52, 2.68], SINE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
-      w1: { x: 84, y: 54, size: 180 }, w2: { r: 1836, y: 872, size: 180 },
+      w1: { x: 292, y: 50, size: 180 }, w2: { r: 1776, y: 890, size: 180 },
       head: { x: 118, y1: 404, size: 150 },
       w3: { r: 1836, y: 886, size: 170 }, w4: { x: 84, y: 886, size: 170 },
       cardsW: 600, cardsW02: 760, cardsS02: (h, c) => ({ x: proj(P(2, 0), c).x - 380, y: proj(P(0, 0), c).y - 24 - h }), cardsHud: (h) => ({ x: 60, y: 46 }), cardsFrom: -60,
       pill: { c: 2.0, r: 3.0, dx: 1, dy: 70, scale: 2.4 },
-      combo: (cam, pr) => ({ x: pr(P(3, 3)).x, y: Math.max(pr(P(3, 2)).y - 130, 175) }), comboSizes: [100, 120, 142, 166],
+      combo: (cam, pr) => ({ x: pr(P(2.98, 3)).x, y: Math.max(pr(P(3, 2)).y - 130, 175) }), comboSizes: [68, 78, 88, 97],
       penAngle: 12.5, penScale: 1, float1: 130, runSize: 76,
     };
 
@@ -276,21 +276,21 @@ export default {
     const HALO2 = `0 0 0.03em ${C.paper}, 0 0 0.07em ${C.paper}, 0 0 0.12em ${C.paper}, 0 0 0.2em ${C.paper}, 0 0 0.32em rgba(247,242,231,0.95), 0 0 0.5em rgba(247,242,231,0.8)`;
     const mkFloat = (text, size, color, style = 'plate') => { const e = div('float-text', hud, text);
       css(e, { position: 'absolute', left: 0, top: 0, fontSize: size + 'px', color, textShadow: 'none', visibility: 'hidden' });
-      if (style === 'plate') css(e, PLATE); else if (style === 'halo') e.style.textShadow = HALO2; else e.style.textShadow = '0 0.03em 0.08em rgba(20,40,90,0.35)';
+      if (style === 'plate') css(e, PLATE); else if (style === 'halo') e.style.textShadow = HALO2; else if (style === 'white') e.style.textShadow = '0 0.03em 0.08em rgba(20,40,90,0.35)';
       return e; };
     const floats = [];
     // "+1" on every capture (main.js:584), solid accent-ink on a paper plate
     [3, 4, 5, 6, 7].forEach((mi) => {
       const bx = moves[mi].completed[0];
       // s04: accent-ink on paper beside the box; chain: white on the solid blue fill (4.98:1), in the box's upper-right corner
-      const anchor = mi === 3 ? () => P(2.3, 2.45) : () => { const q = bd.boxCenter(bx); return { x: q.x + 0.29 * G0, y: q.y - 0.29 * G0 }; };
-      floats.push({ el: mi === 3 ? mkFloat(moves[mi].plusText, L.float1, C.accentInk) : mkFloat(moves[mi].plusText, L.float1 * 0.72, '#fff', 'white'), t0: moves[mi].t + (mi === 3 ? 0.04 : 0.1), life: mi === 3 ? 1.3 : 0.9, rise: mi === 3 ? 1 : 0.12,
+      const anchor = mi === 3 ? () => P(2.45, 2.64) : () => { const q = bd.boxCenter(bx); return { x: q.x + 0.29 * G0, y: q.y - 0.29 * G0 }; };
+      floats.push({ el: mi === 3 ? mkFloat(moves[mi].plusText, L.float1, C.accentInk, 'none') : mkFloat(moves[mi].plusText, L.float1 * 0.72, '#fff', 'white'), t0: moves[mi].t + (mi === 3 ? 0.04 : 0.1), life: mi === 3 ? 1.3 : 0.9, rise: mi === 3 ? 0.45 : 0.12,
         at: (t, c) => { const p = proj(anchor(), c); return { x: p.x, y: p.y, sc: c.s * G0 / 420 }; } });
     });
     // s05 chain combos: grow, shake, each replaced by the next in the same place
     [4, 5, 6, 7].forEach((mi, j) => {
       const until = mi < 7 ? MOVE_T[mi + 1] : 8.55;
-      floats.push({ el: mkFloat(moves[mi].comboText, L.comboSizes[j], C.accentInk, 'halo'), t0: moves[mi].t, life: 0.8, until, shake: 14, rise: 0.2, at: (t, c) => ({ ...L.combo(c, (p) => proj(p, c)), sc: 1 }) });
+      floats.push({ el: mkFloat(moves[mi].comboText, L.comboSizes[j], C.accentInk, 'halo'), t0: moves[mi].t, life: 9, until, last: mi === 7, step: true, shake: 10, rise: 0.2, at: (t, c) => ({ ...L.combo(c, (p) => proj(p, c)), sc: 1 }) });
     });
     const finger = div('', hud); css(finger, { position: 'absolute', left: 0, top: 0, width: '96px', height: '96px', borderRadius: '50%', background: 'rgba(56,53,47,0.16)', border: '4px solid rgba(255,255,255,0.95)', boxShadow: '0 10px 22px rgba(56,53,47,0.22), inset 0 0 0 2px rgba(56,53,47,0.08)' });
     const ripples = [0, 1, 2].map(() => { const r = div('', hud); css(r, { position: 'absolute', left: 0, top: 0, width: '100px', height: '100px', borderRadius: '50%', border: `5px solid ${C.accent}` }); return r; });
@@ -306,6 +306,8 @@ export default {
     lg('bd-pbar', [[0, '#fbfcff'], [0.3, '#e9eef8'], [0.75, '#c9d4ea'], [1, '#aebcdc']]);
     const fb = (id, sd) => { const e = svg('filter', { id, x: '-60%', y: '-60%', width: '220%', height: '220%' }, pdefs); svg('feGaussianBlur', { stdDeviation: sd }, e); };
     fb('bd-psh', 7); fb('bd-phand', 42);
+    const wbF = svg('filter', { id: 'bd-wblur', x: '-40%', y: '-20%', width: '180%', height: '140%', 'color-interpolation-filters': 'sRGB' }, pdefs);
+    const wblur = svg('feGaussianBlur', { stdDeviation: '0 0' }, wbF);
     const handSh = svg('g', { filter: 'url(#bd-phand)' }, penSvg);
     svg('ellipse', { cx: 470, cy: 40, rx: 330, ry: 150, fill: '#3b2f1f' }, handSh);
     const penSh = svg('g', { filter: 'url(#bd-psh)' }, penSvg);
@@ -326,7 +328,15 @@ export default {
     const show = (el, on) => { el.style.visibility = on ? 'visible' : 'hidden'; };
     const pop = (t, t0) => { const u = seg(t, t0, t0 + 0.4); if (u <= 0 || u >= 1) return 1; return u < 0.6 ? lerp(0.5, 1.2, cssBezier(0.175, 0.885, 0.32, 1.275)(u / 0.6)) : lerp(1.2, 1, smooth((u - 0.6) / 0.4)); };
     const floatState = (t, it) => {
-      const a = t - it.t0; if (a < 0 || a > it.life || (it.until && t >= it.until)) return null;
+      const a = t - it.t0;
+      if (it.step) {   // counter step: pops in at >= 60 % presence, cross-fades out over 80 ms as the next one pops in
+        if (a < 0 || t >= it.until) return null;   // the next step replaces it on the same frame: no double image
+        const e = CSS_OUT(clamp(a / 0.2)); let sc = lerp(0.8, 1.12, e), op = lerp(0.75, 1, clamp(a / 0.05)); const ty = -50 - 8 * e;
+        const x = it.last ? seg(t, it.until - 0.16, it.until) : 0; op *= 1 - x; sc *= 1 + 0.15 * x;
+        let dx = 0; const sa = a / 0.3; if (sa < 3) { const fr = sa % 1; dx = fr < 0.25 ? lerp(0, -it.shake, CSS_IO(fr / 0.25)) : fr < 0.75 ? lerp(-it.shake, it.shake, CSS_IO((fr - 0.25) / 0.5)) : lerp(it.shake, 0, CSS_IO((fr - 0.75) / 0.25)); }
+        return { ty, sc, op, dx, dy: -24 * x };
+      }
+      if (a < 0 || a > it.life || (it.until && t >= it.until)) return null;
       const u = a / it.life; let ty, sc, op;
       if (u < 0.25) { const e = CSS_OUT(u / 0.25); ty = lerp(-50, -70, e); sc = lerp(0.4, 1.15, e); op = clamp(e * 1.6); }
       else { const e = CSS_OUT((u - 0.25) / 0.75); ty = lerp(-70, -180, e); sc = lerp(1.15, 1, e); op = 1 - smooth(seg(u, 0.55, 1)); }
@@ -445,8 +455,10 @@ export default {
         if (on3) { const a = outQuint(seg(t, 4.36, 4.86)), o = inCubic(seg(t, 5.2, 5.46)); const x = L.w3.r - w3.w;
           w3.e.style.transform = `translate(${x + (1 - a) * (W - x + 40) - 14 * (t - 4.36) + o * (W - x + 60)}px,${L.w3.y}px)`; }
         const on4 = t > 5.55 && t < 7.0; show(w4.e, on4);
-        if (on4) { const a = outQuint(seg(t, 5.6, 6.1)), o = inCubic(seg(t, 6.7, 6.96)); const x = L.w4.x;
-          w4.e.style.transform = `translate(${x - (1 - a) * (x + w4.w + 40) + 14 * (t - 5.6) - o * (x + w4.w + 60)}px,${L.w4.y}px)`; }
+        if (on4) { const x4 = (tt) => { const a = outQuint(seg(tt, 5.6, 6.1)), o = inCubic(seg(tt, 6.7, 6.96)); const x = L.w4.x; return x - (1 - a) * (x + w4.w + 40) + 14 * (tt - 5.6) - o * (x + w4.w + 60); };
+          w4.e.style.transform = `translate(${x4(t)}px,${L.w4.y}px)`;
+          const v = Math.abs(x4(t) - x4(t - 1 / 60)), bl = t > 6.7 ? 0.45 * v : 0;   // directional blur matching the whip
+          if (bl > 0.5) { wblur.setAttribute('stdDeviation', `${bl.toFixed(1)} 0`); w4.e.style.filter = 'url(#bd-wblur)'; } else w4.e.style.filter = 'none'; }
       }
 
       // ---- player cards ----
