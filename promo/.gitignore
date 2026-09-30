@@ -13,3 +13,6 @@ v/vendor
 v/shared
 v/scenes
 v/assets
+review/**/.*hf-transaction*/
+review/**/work-*/
+review/**/*.log

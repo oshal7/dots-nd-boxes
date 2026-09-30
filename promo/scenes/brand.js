@@ -20,7 +20,7 @@ const TM = {
   zoomEnd: 26.15,                       // camera ease-out (lead movement of s11)
   letters: 25.28, letterStagger: 0.034, letterDur: 0.5,
   move: [26.15, 26.85], lockLag: 0.06,  // mark + lockup slide up to the end card
-  head: [26.62, 27.08], pill: [26.8, 27.2], under: [27.22, 27.9], sub: [26.96, 27.3], credit: [27.0, 27.45],
+  head: [26.7, 27.12], pill: [26.8, 27.2], under: [27.22, 27.9], sub: [26.96, 27.3], credit: [27.0, 27.45],
   push: [26.5, 30.6],
 };
 
@@ -32,9 +32,9 @@ export default {
 
     // ---------- layout (all in film px) ----------
     const LY = V
-      ? { s1: 5.0, m1: [540, 800], lockF: 200, lock1: [540, 1215], s2: 2.4, m2: [540, 330], lockK2: 0.6, lock2: [540, 548],
-          headF: 132, head: [540, 812], headLines: ['Play free', 'in your browser'], urlF: 42, pill: [540, 1150],
-          subF: 36, sub: [540, 1370], creditF: 24, credit: [540, 1770], pivot: [540, 900] }
+      ? { s1: 5.0, m1: [540, 800], lockF: 200, lock1: [540, 1215], s2: 2.8, m2: [540, 350], lockK2: 0.64, lock2: [540, 610],
+          headF: 150, head: [540, 890], headLines: ['Play free', 'in your browser'], urlF: 46, pill: [540, 1250],
+          subF: 38, sub: [540, 1462], creditF: 24, credit: [540, 1770], pivot: [540, 920] }
       : { s1: 4.4, m1: null, lockF: 212, lock1: null, s2: 1.6, m2: null, lockK2: 0.52, lock2: null,
           headF: 132, head: [960, 428], headLines: ['Play free in your browser'], urlF: 58, pill: [960, 648],
           subF: 36, sub: [960, 818], creditF: 24, credit: [960, 1030], pivot: [960, 500] };
@@ -61,7 +61,7 @@ export default {
       lock.appendChild(s); letters.push(s);
     }
     let lockW = lock.offsetWidth; const lockH = lock.offsetHeight;
-    if (V && lockW > W - 150) { const f = LY.lockF * (W - 150) / lockW; lock.style.fontSize = f + 'px'; LY.lockF = f; lockW = lock.offsetWidth; }
+    if (V && lockW > W - 200) { const f = LY.lockF * (W - 200) / lockW; lock.style.fontSize = f + 'px'; LY.lockF = f; lockW = lock.offsetWidth; }
     const lockH2 = lock.offsetHeight;
     // 16:9: mark left, lockup right, centred as one group; text optically centred on the mark
     const markVis = (s) => 92 * s; // visible extent of the mark (dots 14..106)
@@ -128,9 +128,9 @@ export default {
     };
 
     const bursts = [];
-    { const [x, y] = toScreen(TM.l2[1], 60, 60); bursts.push({ t0: TM.l2[1], x, y, color: C.p4, seed: 11, n: 8, speed: 420, size: 9, life: 0.5 }); }
-    { const [x, y] = toScreen(TM.l3[1], 100, 60); bursts.push({ t0: TM.l3[1], x, y, color: C.p2, seed: 12, n: 8, speed: 420, size: 9, life: 0.5 }); }
-    { const tb = TM.box[0] + 0.29; const [x, y] = toScreen(tb, 40, 80); bursts.push({ t0: tb, x, y, color: C.accent, seed: 13, n: 12, speed: 560, size: 8, life: 0.55 }); }
+    { const [x, y] = toScreen(TM.l2[1], 60, 60); bursts.push({ t0: TM.l2[1], x, y, color: C.p4, seed: 11, n: 9, speed: 700, size: 12, life: 0.5 }); }
+    { const [x, y] = toScreen(TM.l3[1], 100, 60); bursts.push({ t0: TM.l3[1], x, y, color: C.p2, seed: 12, n: 9, speed: 700, size: 12, life: 0.5 }); }
+    { const tb = TM.box[0] + 0.29; const [x, y] = toScreen(tb, 40, 80); bursts.push({ t0: tb, x, y, color: C.accent, seed: 13, n: 12, speed: 1300, size: 12, life: 0.55 }); }
 
     return {
       render(t) {
