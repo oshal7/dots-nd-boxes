@@ -478,7 +478,7 @@ export default {
           const tWin = moves.at(-1).t, flash = pop(t, tWin);
           [mia, leo].forEach((cd, i) => { const a = outCubic(seg(t, 2.24 + i * 0.08, 2.7 + i * 0.08));
             const lx = i === 1 ? -182 * toCol : 0, ly = i === 1 ? (cardsNat.h + 12) * toCol : 0, fs = i === 0 ? lerp(1, flash, 0.6) : 1;
-            css(cd.el, { transform: `translate(${lx}px,${ly + (1 - a) * L.cardsFrom}px) scale(${fs})`, transformOrigin: '50% 50%', opacity: clamp(a * 1.6),
+            css(cd.el, { transform: `translate(${lx}px,${ly + (1 - a) * L.cardsFrom}px) scale(${fs})`, transformOrigin: V && i === 0 ? '100% 50%' : '50% 50%',   /* 9:16: Mia's win pop grows away from Leo's card */ opacity: clamp(a * 1.6),
               boxShadow: i === 0 && t >= tWin ? `3px 4px 0 color-mix(in srgb, ${C.p1} 35%, transparent), 0 0 ${18 * (1 - seg(t, tWin, tWin + 0.6))}px ${6 * (1 - seg(t, tWin, tWin + 0.6))}px rgba(47,107,216,${0.5 * (1 - seg(t, tWin, tWin + 0.6))})` : '' }); });
           const st = stateAt(t);
           const sc = st ? st.scores : { p1: 0, p2: 0 };
