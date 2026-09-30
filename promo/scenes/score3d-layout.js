@@ -22,7 +22,7 @@ const TK = [10.0, 10.8, 11.6, 12.3, 13.0, 13.5, 14.0];
 
 export function cfg(V, k) {
   const G = 150 * k;
-  const EL_V0 = -20; // °/s: the board module's CSS tilt is still moving ~20°/s at the 10.0 cut
+  const EL_V0 = -27.4; // °/s: the board module's CSS tilt is still moving ~27.4°/s at the 10.0 cut
   const cube = 0.7 * G;
   const base = {
     margin: 0.42 * G, slabT: 16 * k, baseH: 30 * k, baseOut: 22 * k, baseColor: C.ink,
@@ -39,7 +39,7 @@ export function cfg(V, k) {
     return { ...base, ui: 1.3, chipUi: 1.45, chipName: 48, chipScore: 58,
       tower: { p2: { x: -tx, z: 0.1 * G }, p1: { x: tx, z: 0.1 * G } },
       cam: {
-        el: keys([EL0, 50, 47, 44, 40, 38, 37]),
+        el: keys([EL0, 48, 46, 43.5, 40, 38, 37]),
         az: keys([0, 7, 13, 18, 22, 25, 26]),
         dist: keys([PERSPECTIVE, ...[1330, 1400, 1490, 1550, 1500, 1480].map((v) => v * k)]),
         tx: keys([0, 70, 20, 30, 115, 145, 155].map((v) => v * k)),
@@ -56,7 +56,7 @@ export function cfg(V, k) {
   return { ...base, cube: vc, cubeR: 0.17 * vc, arc: 0.42 * vc + 20 * k, chipLift: 0.22 * vc, ui: 1.25, chipUi: 1.55, chipName: 52, chipScore: 62,
     tower: { p2: { x: -1.05 * G, z: tz }, p1: { x: 1.05 * G, z: tz } },
     cam: {
-      el: keys([EL0, 51, 48, 45, 41, 39, 38]),
+      el: keys([EL0, 49, 47, 44.5, 41, 39, 38]),
       az: keys([0, 4, 7, 9, 11, 12, 12]),
       dist: keys([PERSPECTIVE, 2000, 2100, 2120, 2060, 2020, 2000]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
