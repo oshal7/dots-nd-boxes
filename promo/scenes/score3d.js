@@ -194,17 +194,17 @@ export default {
       let tgt = b.tgt, el = b.el, az = b.az, D = b.D, fov = fov0;
       if (t > T_DIVE) {
         // camera dive onto the top face of Mia's tower: accelerating, face-on, FOV narrows a little
-        const u = seg(t, T_DIVE, T_BLUE - 0.03);
+        const u = seg(t, T_DIVE, T_BLUE - 0.085);
         place(b.tgt, b.el, b.az, b.D);
         const o = camera.position.clone().sub(face), d0 = o.length();
         const el0 = Math.asin(o.y / d0), az0 = Math.atan2(o.x, o.z);
         const fov1 = fov0 * 0.8;
         const tanMax = Math.tan(fov1 * Math.PI / 360) * Math.max(1, W / H);
         const d1 = 0.62 * (s / 2 - L.cubeR) / tanMax;
-        const eo = smoother(u), ed = Math.pow(u, 2.3);
+        const eo = smoother(u), ed = Math.pow(u, 2.0);
         tgt = b.tgt.clone().lerp(face, smoother(clamp(u * 1.15)));
         el = lerp(el0, 84 * Math.PI / 180, eo); az = lerp(az0, 0, eo);
-        const dd = d0 * Math.pow(d1 / d0, ed);
+        const dd = d0 * Math.pow(d1 / d0, ed) * (1 - 0.06 * seg(t, T_BLUE - 0.085, T_BLUE));  // keep creeping in while the face turns flat blue
         fov = lerp(fov0, fov1, smooth(u));
         camera.fov = fov; camera.updateProjectionMatrix();
         place(tgt, el, az, dd);
