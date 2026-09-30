@@ -16,3 +16,4 @@ v/assets
 review/**/.*hf-transaction*/
 review/**/work-*/
 review/**/*.log
+review/**/critic*/
