@@ -49,16 +49,16 @@ export function cfg(V, k) {
       s07Size: 220, s07Pos: (W, H, a, b) => [W / 2 - a.width / 2 - 170, 150, W / 2 - b.width / 2 + 170, 360],
     };
   }
-  const tz = S / 2 + base.baseOut + 0.9 * cube + cube / 2;
-  return { ...base, ui: 1.25, chipUi: 1.55, chipName: 52, chipScore: 62,
-    tower: { p2: { x: -0.95 * G, z: tz }, p1: { x: 0.95 * G, z: tz } },
+  const vc = 0.8 * G, tz = S / 2 + base.baseOut + 0.7 * vc + vc / 2;
+  return { ...base, cube: vc, cubeR: 0.17 * vc, arc: 0.42 * vc + 20 * k, chipLift: 0.22 * vc, ui: 1.25, chipUi: 1.55, chipName: 52, chipScore: 62,
+    tower: { p2: { x: -1.05 * G, z: tz }, p1: { x: 1.05 * G, z: tz } },
     cam: {
       el: keys([68, 58, 52, 46, 41, 39, 38]),
       az: keys([0, 4, 7, 9, 11, 12, 12]),
-      dist: keys([1800, 2100, 2250, 2280, 2220, 2180, 2160]),
+      dist: keys([1800, 2080, 2200, 2230, 2170, 2130, 2110]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
-      ty: keys([0, -80, -170, -250, -290, -300, -300]),
-      tz: keys([0, 230, 400, 520, 580, 590, 592]),
+      ty: keys([0, 10, 20, 40, 60, 65, 66]),
+      tz: keys([0, 150, 280, 380, 430, 440, 442]),
     },
     winSize: 132, winFrom: -160,
     // centred, above Mia's chip
