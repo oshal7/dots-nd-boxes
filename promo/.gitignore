@@ -17,3 +17,5 @@ review/**/.*hf-transaction*/
 review/**/work-*/
 review/**/*.log
 review/**/critic*/
+review/**/r[0-9]*-*/
+review/**/*-check*/
