@@ -45,7 +45,10 @@ export async function boot() {
     tl.totalTime(t, true);
     for (const b of built) {
       const [a, z] = b.s.vis; const on = t >= a && (t < z || (z >= FILM_DURATION && t <= z));
+      // display:none, not just visibility — a child that sets its own visibility:visible would
+      // otherwise show through a hidden layer. Layers stay laid out during build() for measurements.
       b.layer.style.visibility = on ? 'visible' : 'hidden';
+      b.layer.style.display = on ? 'block' : 'none';
       if (on && b.api.render) b.api.render(t);
     }
   };

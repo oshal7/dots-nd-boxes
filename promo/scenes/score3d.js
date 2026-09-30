@@ -66,12 +66,12 @@ export default {
     // ---------------- slab top (board texture, per-cell swap A→B as boxes lift, flat→lit blend) ----------------
     const texOf = (cv) => { const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = renderer.capabilities.getMaxAnisotropy(); tx.generateMipmaps = true; tx.minFilter = THREE.LinearMipmapLinearFilter; tx.magFilter = THREE.LinearFilter; return tx; };
     const texA = texOf(cvA), texB = texOf(cvB);
-    const topU = { mapB: { value: texB }, uLift: { value: new Array(16).fill(0) }, uFlat: { value: 1 }, uS: { value: S }, uM: { value: m }, uG: { value: G } };
+    const topU = { mapB: { value: texB }, uLift: { value: new Array(16).fill(0) }, uFlat: { value: 1 }, uS: { value: S }, uM: { value: m }, uG: { value: G }, uLrefTop: { value: 1 }, uCalTop: { value: 0 } };
     const topMat = new THREE.MeshStandardMaterial({ map: texA, roughness: 0.92, metalness: 0 });
     topMat.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, topU);
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', `#include <common>\nuniform sampler2D mapB; uniform float uLift[16]; uniform float uFlat; uniform float uS; uniform float uM; uniform float uG;`)
+        .replace('#include <common>', `#include <common>\nuniform sampler2D mapB; uniform float uLift[16]; uniform float uFlat; uniform float uS; uniform float uM; uniform float uG; uniform float uLrefTop; uniform float uCalTop;`)
         .replace('#include <map_fragment>', `
           vec3 flatCol = vec3(1.0);
           {
@@ -82,7 +82,22 @@ export default {
             vec4 tx = mix(tA, tB, lift);
             flatCol = tx.rgb; diffuseColor *= tx;
           }`)
-        .replace('#include <dithering_fragment>', `#include <dithering_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, sRGBTransferOETF(vec4(flatCol, 1.0)).rgb, uFlat);`);
+        .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+          {
+            // Coloured ink (fills, lines) is pinned to its brand sRGB value and only takes a shading factor (shadows),
+            // exactly like the cubes; paper, dots and marks take the physical lighting.
+            const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
+            vec3 fS = sRGBTransferOETF(vec4(flatCol, 1.0)).rgb;
+            float sat = max(fS.r, max(fS.g, fS.b)) - min(fS.r, min(fS.g, fS.b));
+            float inkMask = smoothstep(0.28, 0.45, sat);
+            float Ld = dot(totalDiffuse / max(diffuseColor.rgb, vec3(1e-3)), LUM);
+            if (uCalTop > 0.5) { gl_FragColor.rgb = vec3(Ld / 4.0); }
+            else {
+              vec3 ink = fS * mix(0.72, 1.0, clamp(Ld / uLrefTop, 0.0, 1.0));
+              vec3 lit = mix(gl_FragColor.rgb, ink, inkMask);
+              gl_FragColor.rgb = mix(lit, fS, uFlat);
+            }
+          }`);
     };
     const top = new THREE.Mesh(new THREE.PlaneGeometry(S, S), topMat);
     top.rotation.x = -Math.PI / 2; top.receiveShadow = true;
@@ -214,7 +229,7 @@ export default {
     // dive ease: accelerates (power 2.2) until u = 0.85, then a quadratic ease-out with matched slope settles it over the
     // last ~4 frames (no dead stop, no velocity step)
     const DIVE = (u) => { const a = 0.85, E = 0.8375; return u < a ? E * Math.pow(u / a, 2.2) : 1 - (1 - E) * Math.pow(1 - (u - a) / (1 - a), 2); };
-    const T_DIVE_END = T_BLUE - 0.017;
+    const T_DIVE_END = T_BLUE;
     function camPose(t) {
       const b = sph(t), fovB = spline(t, L.cam.fov);
       if (t > T_DIVE) {
@@ -226,7 +241,7 @@ export default {
         const el0 = Math.asin(o.y / d0), az0 = Math.atan2(o.x, o.z);
         const fov1 = fovB * 0.8;
         const tanMax = Math.tan(fov1 * Math.PI / 360) * Math.max(1, W / H);
-        const d1 = 0.4 * (s / 2 - L.cubeR) / tanMax;
+        const d1 = 0.3 * (s / 2 - L.cubeR) / tanMax;  // deep inside the flat part of the face: 100% face well before the cut
         const e = DIVE(u), eo = smoother(Math.pow(e, 0.75));
         const tgt = b.tgt.clone().lerp(face, eo);
         const el = lerp(el0, 84 * Math.PI / 180, eo), az = lerp(az0, 0, eo);
@@ -284,7 +299,7 @@ export default {
         const first = cubes.find((c) => c.o === p);
         towerBlobs[p].material.opacity = 0.62 * smoother(seg(t, landT(first) - 0.08, landT(first) + 0.05));
       }
-      flyU.uFlat.value = smoother(seg(t, T_BLUE - 0.075, T_BLUE - 0.017));
+      flyU.uFlat.value = smoother(seg(t, T_BLUE - 0.07, T_BLUE - 0.012));
       flyU.uSpec.value = 1 - smoother(seg(t, T_DIVE + 0.05, T_DIVE + 0.3));  // no hotspot on the face that becomes the field
     }
 
@@ -294,6 +309,12 @@ export default {
       const tgt = new THREE.Color(TOP_LIT);
       pose(T0 + 0.6); topU.uFlat.value = 0; cubes.forEach((c) => { c.mesh.visible = false; });
       const sp = project(0, 0, S / 2 - m * 0.5);
+      {
+        topU.uCalTop.value = 1; renderer.render(scene, camera);
+        gl.readPixels(Math.round(sp.x) - 2, H - 1 - Math.round(sp.y) - 2, 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        let a = 0; for (let i = 0; i < 25; i++) a += buf[i * 4 + 1]; a /= 25 * 255;
+        topU.uLrefTop.value = Math.max(0.05, 4 * a); topU.uCalTop.value = 0;
+      }
       for (let it = 0; it < 4; it++) {
         renderer.render(scene, camera);
         gl.readPixels(Math.round(sp.x) - 2, H - 1 - Math.round(sp.y) - 2, 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
@@ -327,10 +348,11 @@ export default {
         if (a <= 0 || out >= 1) { e.style.visibility = 'hidden'; continue; }
         e.style.visibility = 'visible';
         const pt = tops[p];
-        const sc = lerp(0.55, 1, outBack(a, 2.2)) * lerp(1, 0.6, inCubic(out));
-        const x = pt.x - chipSize[p].w / 2, y = pt.y - chipSize[p].h - 10 * L.ui - 26 * L.ui * (1 - outCubic(a)) - 60 * L.ui * inCubic(out);
+        // exit: the opaque card shrinks away into its tower top (no see-through fade); opacity only in the last 15%
+        const sc = lerp(0.55, 1, outBack(a, 2.2)) * (1 - inCubic(out));
+        const x = pt.x - chipSize[p].w / 2, y = pt.y - chipSize[p].h - 10 * L.ui - 26 * L.ui * (1 - outCubic(a)) + 0 * out;
         e.style.transform = `translate(${x}px,${y}px) scale(${sc})`;
-        e.style.opacity = clamp(a * 3) * (1 - inCubic(out));
+        e.style.opacity = Math.min(clamp(a * 3), clamp((1 - out) / 0.15));
       }
       // "Mia Wins!" — placed relative to the projected top of Mia's tower
       const wa = seg(t, 12.6, 13.05), wo = seg(t, T_DIVE - 0.26, T_DIVE - 0.06);
@@ -339,7 +361,7 @@ export default {
         win.style.visibility = 'visible';
         let [wx, wy] = L.winPos(W, H, winSz, tops.p1, chipSize.p1);
         wx = clamp(wx, 60, W - 60 - winSz.w); wy = clamp(wy, 50, H - winSz.h);
-        const x = wx + L.winFrom * (1 - outQuint(wa)) - 700 * L.ui * inCubic(wo), y = wy;
+        const x = wx + L.winFrom * (1 - outQuint(wa)), y = wy - 60 * L.ui * inCubic(wo);  // exits upward in place
         win.style.transform = `translate(${x}px,${y}px) scale(${lerp(1.12, 1, outCubic(wa)) * lerp(1, 1.03, smooth(seg(t, 12.9, 13.5)))})`;
         win.style.opacity = clamp(wa * 2.5) * (1 - inCubic(wo));
       }
