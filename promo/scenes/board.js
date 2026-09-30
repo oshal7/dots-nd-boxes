@@ -32,7 +32,7 @@ function keysE(t, ks) {
 }
 
 // ---------- film times ----------
-const T_STROKE = 0.8, T_HATCH0 = 0.84, T_HATCH1 = 1.12, T_PULL = 1.1;
+const T_STROKE = 0.8, T_HATCH0 = 0.9, T_HATCH1 = 1.13, T_PULL = 1.1;
 const T_SW0 = 2.12, T_SW1 = 2.86;                   // paper → app sweep
 const T_TILT0 = 9.3, T_END = 10.0;
 const MOVE_T = [null, 4.25, 4.9, 5.75, 7.0, 7.3, 7.6, 7.9];   // moves 1..7 (move 0 is the pen stroke)
@@ -196,6 +196,7 @@ export default {
         const j = () => (R() - 0.5) * 0.05 * s;
         hatchPts.push({ x: x0 + p1[0] + j(), y: y0 + p1[1] + j() }, { x: x0 + p2[0] + j(), y: y0 + p2[1] + j() });
       } }
+    hatchPts.reverse();
     const hatchLen = [0]; for (let i = 1; i < hatchPts.length; i++) hatchLen.push(hatchLen[i - 1] + Math.hypot(hatchPts[i].x - hatchPts[i - 1].x, hatchPts[i].y - hatchPts[i - 1].y));
     const hatchAt = (p) => { const Lt = hatchLen.at(-1) * clamp(p); for (let i = 1; i < hatchPts.length; i++) if (hatchLen[i] >= Lt) { const k = (Lt - hatchLen[i - 1]) / (hatchLen[i] - hatchLen[i - 1] || 1); return { x: lerp(hatchPts[i - 1].x, hatchPts[i].x, k), y: lerp(hatchPts[i - 1].y, hatchPts[i].y, k) }; } return hatchPts.at(-1); };
     const hatch = svg('path', { d: 'M' + hatchPts.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L'), fill: 'none', stroke: INK, 'stroke-width': 1.9 * K, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: 0.8, pathLength: 1, 'stroke-dasharray': '1 2' }, inkG);
@@ -322,7 +323,7 @@ export default {
     };
     const tipOnPaper = (t) => {       // board-space pen tip (plus lift 0..1)
       if (t <= T_STROKE) { const u = t / T_STROKE; return { p: bez(0.4 + 0.6 * (1 - (1 - u) * (1 - u) * (1 - 0.35 * u))), lift: 0 }; }
-      if (t <= T_HATCH0) { const u = smooth(seg(t, T_STROKE, T_HATCH0)); const a = bez(1), b = hatchPts[0]; return { p: { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u) }, lift: Math.sin(Math.PI * u) * 0.35 }; }
+      if (t <= T_HATCH0) { const u = smooth(seg(t, T_STROKE, T_HATCH0)); const a = bez(1), b = hatchPts[0]; return { p: { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u) }, lift: Math.sin(Math.PI * u) * 0.8 }; }
       const u = seg(t, T_HATCH0, T_HATCH1); return { p: hatchAt(0.15 * smooth(u) + 0.85 * u), lift: 0 };
     };
 
@@ -494,7 +495,7 @@ export default {
           const lift = clamp(tp.lift + smooth(seg(t, T_HATCH1, T_HATCH1 + 0.14)));
           const ret = 1700 * inCubic(seg(t, T_HATCH1 + 0.02, 1.62));
           const ang = L.penAngle + 1.6 * Math.sin(t * 5.2) - 3 * smooth(seg(t, T_HATCH1, 1.5));
-          const ar = ang * Math.PI / 180, dx = Math.cos(ar) * ret * sc, dy = Math.sin(ar) * ret * sc;
+          const ar = (ang - 8) * Math.PI / 180, dx = Math.cos(ar) * ret * sc, dy = Math.sin(ar) * ret * sc;
           const S = L.penScale * sc * (1 + 0.05 * lift);
           const px = tip.x + dx - 12 * lift, py = tip.y + dy - 26 * lift;
           pen.setAttribute('transform', `translate(${px} ${py}) rotate(${ang}) scale(${S})`);

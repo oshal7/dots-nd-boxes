@@ -52,7 +52,7 @@ export default {
     const hemi = new THREE.HemisphereLight(0xfff6e8, 0xcdbd9c, 0);
     scene.add(hemi);
     const key = new THREE.DirectionalLight(0xffffff, 0);
-    key.castShadow = true; key.shadow.mapSize.set(4096, 4096); key.shadow.radius = 6; key.shadow.bias = -0.0004; key.shadow.normalBias = 0.6;
+    key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6; key.shadow.bias = -0.0004; key.shadow.normalBias = 0.6;
     const sc = key.shadow.camera; sc.left = -1700 * k; sc.right = 1700 * k; sc.top = 1700 * k; sc.bottom = -1700 * k; sc.near = 100; sc.far = 9000 * k;
     scene.add(key); scene.add(key.target);
     const rim = new THREE.DirectionalLight(0xffb36b, 0);
@@ -315,7 +315,7 @@ export default {
       if (iu > 0) rOut = hole + lerp(dotR, 7 * L.ui, smoother(clamp(iu * 3)));
       css(ring, { width: 2 * rOut + 'px', height: 2 * rOut + 'px', transform: `translate(${D.x - rOut}px,${D.y - rOut}px)`, visibility: rOut > 0.2 ? 'visible' : 'hidden' });
       // ripple ring on each beat pulse
-      const ru = Math.max(seg(t, 14.5, 14.95), 0) < 1 && t >= 14.5 && t < 14.95 ? seg(t, 14.5, 14.95) : (t >= 15.0 && t < 15.1 ? seg(t, 15.0, 15.45) : 0);
+      const ru = t >= 14.5 && t < 14.95 ? seg(t, 14.5, 14.95) : (t >= 15.0 && t < 15.45 ? seg(t, 15.0, 15.45) : 0);
       const rr = dotR * (1 + 2.2 * outCubic(ru));
       css(ripple, { width: 2 * rr + 'px', height: 2 * rr + 'px', transform: `translate(${D.x - rr}px,${D.y - rr}px)`, opacity: ru > 0 ? 0.7 * (1 - ru) : 0 });
       if (hole > 0) {

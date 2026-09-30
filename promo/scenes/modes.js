@@ -311,7 +311,7 @@ export default {
         const taps = order.map((id, i) => { const m = boardToWrap(g4, i === 0 ? tapPt() : B4.edgeMid(id)); return { t0: i === 0 ? TT.miaTap : TT.snaps[i] - 0.07, x: m.x, y: m.y, r: 30 }; });
         rip4.draw(t, taps);
         const bc = boardToWrap(g4, B4.boxCenter('b_0_0'));
-        f4.draw(t, cap + 0.05, bc.x + B4.gap * 0.32, bc.y - B4.gap / 2 - 16);
+        f4.draw(t, cap + 0.05, bc.x + B4.gap / 2 + 34, bc.y - B4.gap * 0.1);
         pill(g4.pill, t, cap + 0.1);
       }
 
@@ -336,7 +336,7 @@ export default {
         cardStates(ai.cards, [[0, 'p2']], t, [['p2', TT.aiSnap + 0.02, 0, 1]]);
         ai.cards.p1.scoreEl.textContent = 1;
         const bc = boardToWrap(ai, Bai.boxCenter('b_0_1'));
-        fAi.draw(t, TT.aiSnap + 0.05, bc.x + Bai.gap * 0.3, bc.y - Bai.gap / 2 - 14);
+        fAi.draw(t, TT.aiSnap + 0.05, bc.x + Bai.gap / 2 + 26, bc.y);
         pill(ai.pill, t, TT.aiSnap + 0.1);
       }
 
