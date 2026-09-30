@@ -57,7 +57,7 @@ export function injectCSS() {
 .mx-hint { color:#6b655a; font-size:14px; margin:0 0 16px; text-align:center; line-height:1.35; }
 .mx-input { width:100%; padding:11px 14px; border:2px solid var(--line); border-radius:11px; background:var(--paper); color:var(--ink); font-family:var(--font-ui); font-size:15px; font-weight:700; min-height:45px; position:relative; }
 .mx-code { text-align:center; letter-spacing:6px; font-size:24px; font-weight:800; text-transform:uppercase; font-family:var(--font-hand); padding:6px 14px; min-height:47px; }
-.mx-code .ph { color:#9a9384; }
+.mx-code .ph { color:#6b655a; }
 .mx-caret { display:inline-block; width:2px; height:26px; background:var(--accent); vertical-align:-5px; margin-left:1px; }
 .mx-share { margin-top:18px; text-align:center; }
 .mx-share .room-code-box { padding:12px 10px; }

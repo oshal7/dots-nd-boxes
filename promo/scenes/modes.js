@@ -57,7 +57,7 @@ export default {
       passOff: [{ x: -40, y: -18, ry: 5, rz: 3.5 }, { x: 40, y: 18, ry: -4, rz: -3 }, { x: -10, y: -8, ry: 2, rz: 1.5 }],
       E: { dx: 0, dy: -30, rx: 4, ry: -9, rz: 0 },
       lobbyScroll: -300, joinScroll: -64,
-      s10: { s: 2.3 / 2.2, p1: [540, 260 + 989], p2: [540, 1060 + 989], r1: { rx: 0, ry: 6, rz: 0 }, r2: { rx: 0, ry: -6, rz: 0 } },
+      s10: { s: 2.3 / 2.2, p1: [540, 260 + 989], p2: [540, 1086 + 989], r1: { rx: 0, ry: 6, rz: 0 }, r2: { rx: 0, ry: -6, rz: 0 } },
       hx: { s08: { x: CX, y: 60, size: 150, align: 'center' }, chip: { x: CX, y: 250 }, s09: { x: CX, y: 96, size: 150 }, s10: { x: CX, y: 34, size: 124 } },
     } : {
       Z: 3.0, P: 4600,
@@ -91,6 +91,7 @@ export default {
     const lc = lobbyCreatePage(ph1.screen, CODE, cfg.lobbyScroll);
     const on1 = gamePage(ph1.screen, { players: [{ name: 'Mia', pid: 'p1' }, { name: 'Leo', pid: 'p2' }], board: { rows: 5, cols: 5 }, id: 'mxo1' + sfx, footer: 'share', roomCode: CODE });
     const lj = lobbyJoinPage(ph2.screen, cfg.joinScroll);
+    const SHARE_H = lc.share.offsetHeight; lc.share.style.overflow = 'hidden'; lc.share.style.height = '0px';
     const on2 = gamePage(ph2.screen, { players: [{ name: 'Mia', pid: 'p1' }, { name: 'Leo', pid: 'p2' }], board: { rows: 5, cols: 5 }, id: 'mxo2' + sfx, footer: 'share', roomCode: CODE });
     const PAGES = { g4: g4.page, menu: menu.page, st: st.page, ai: ai.page, lc: lc.page, on1: on1.page, lj: lj.page, on2: on2.page };
     const SHADE = {}; for (const k in PAGES) SHADE[k] = div('mx-shade', PAGES[k]);
@@ -365,7 +366,7 @@ export default {
       }
 
       // ---- s10 lobby → online
-      if (t < 21.3) { lc.box.style.opacity = 0; lc.act.style.opacity = 0; lc.wait.style.opacity = 0; }
+      if (t < 21.3) { lc.box.style.opacity = 0; lc.act.style.opacity = 0; lc.wait.style.opacity = 0; lc.share.style.height = '0px'; }
       if (t >= 21.3) {
         const n = lc.letters.length;
         const cb = bump(t, TT.create - 0.05, 0.24);
@@ -376,6 +377,7 @@ export default {
         lc.act.style.opacity = smooth(seg(t, TT.codeShow + 0.04, TT.codeShow + 0.2));
         lc.letters.forEach((el) => { el.style.opacity = 1; el.style.transform = 'none'; });
         lc.wait.style.opacity = smooth(seg(t, TT.waitShow, TT.waitShow + 0.2));
+        lc.share.style.height = SHARE_H * smoother(seg(t, TT.codeShow - 0.04, TT.codeShow + 0.26)) + 'px';
         lc.spin.style.transform = `rotate(${(t * 450) % 360}deg)`;
         const [y0, y1] = TT.type; const typed = t < y0 ? 0 : Math.min(n, 1 + Math.floor(((t - y0) / (y1 - y0)) * (n - 0.001)));
         const focused = t >= y0 - 0.2; const caretOn = Math.floor((t - 21.0) / 0.4) % 2 === 0 || (t >= y0 && t < y1 + 0.12);
