@@ -453,9 +453,9 @@ export default {
       {
         const on = t > 2.2 && t < 9.62; show(cardsWrap, on);
         if (on) {
-          const toHud = GLIDE(seg(t, 4.0, 4.5)), cs = lerp(cardsS02, cardsS, toHud) * (V ? 1 : lerp(1, 0.78, GLIDE(seg(t, 8.4, 8.9))));
+          const toHud = GLIDE(seg(t, 4.0, 4.5)), cs = lerp(cardsS02, cardsS, toHud) * (V ? 1 : lerp(1, 0.62, GLIDE(seg(t, 8.4, 8.9))));
           const pS = L.cardsS02(cardsNat.h * cardsS02, cam(Math.min(t, 4.0))), pH = L.cardsHud(cardsH);
-          const x = lerp(pS.x, pH.x, toHud), y = lerp(pS.y, pH.y, toHud);
+          const x = lerp(pS.x, pH.x, toHud) - (V ? 0 : 20 * GLIDE(seg(t, 8.4, 8.9))), y = lerp(pS.y, pH.y, toHud) - (V ? 0 : 12 * GLIDE(seg(t, 8.4, 8.9)));
           const fade = 1 - smooth(seg(t, 9.3, 9.6));
           css(cardsWrap, { transform: `translate(${x}px,${y}px) scale(${cs})`, opacity: fade });
           [mia, leo].forEach((cd, i) => { const a = outCubic(seg(t, 2.24 + i * 0.08, 2.7 + i * 0.08)); css(cd.el, { transform: `translateY(${(1 - a) * L.cardsFrom}px)`, opacity: clamp(a * 1.6) }); });
