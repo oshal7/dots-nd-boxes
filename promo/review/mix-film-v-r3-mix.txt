@@ -1,0 +1,30 @@
+master: I -16.9 LUFS, LRA 2.2 LU, true-peak-ish -5.6 dBFS
+music-only: I -17.0 LUFS, LRA 2.2 LU, peak -5.6 dBFS
+effects add +0.10 LU to the integrated loudness
+
+  1.45s whoosh-short gain  0.156 in-band + 3.0 dB  2-8k + 0.0 dB  fx-rms vs music  -6.1 dB  [target/median] s01 pull-back (peak speed)
+  4.00s whoosh-short gain  0.156 in-band + 4.5 dB  2-8k +-0.0 dB  fx-rms vs music -11.8 dB  [target/median] s03 push into the board
+  4.25s click-soft   gain  0.578 in-band + 0.0 dB  2-8k + 2.2 dB  fx-rms vs music -13.8 dB  [hf-cap/median] tap h_0_1
+  5.75s pop          gain  0.223 in-band + 4.5 dB  2-8k + 0.0 dB  fx-rms vs music -15.2 dB  [target/median] Mia closes b_2_1
+  6.75s whoosh-short gain  0.156 in-band + 2.6 dB  2-8k +-0.0 dB  fx-rms vs music -12.3 dB  [target/median] whip to the chain
+  7.12s pop          gain  0.239 in-band + 0.0 dB  2-8k + 0.0 dB  fx-rms vs music -14.8 dB  [target/median] 2x
+  7.36s pop          gain  0.231 in-band + 3.3 dB  2-8k + 0.0 dB  fx-rms vs music -14.2 dB  [target/median] 3x
+  7.58s pop          gain  0.235 in-band + 1.9 dB  2-8k + 0.0 dB  fx-rms vs music -13.9 dB  [target/median] 4x
+  7.77s pop          gain  0.233 in-band + 4.6 dB  2-8k +-0.0 dB  fx-rms vs music -13.8 dB  [target/median] 5x
+  8.50s whoosh-short gain  0.156 in-band + 4.3 dB  2-8k +-0.0 dB  fx-rms vs music -11.0 dB  [target/median] pull back to the whole game
+ 12.60s chime        gain  0.374 in-band + 1.6 dB  2-8k + 2.0 dB  fx-rms vs music -16.2 dB  [hf-cap/median] Mia Wins!
+ 13.70s whoosh-short gain  0.156 in-band + 2.5 dB  2-8k + 0.0 dB  fx-rms vs music -11.7 dB  [target/median] dive into the tower top
+ 15.20s whoosh-short gain  0.156 in-band + 2.1 dB  2-8k + 0.0 dB  fx-rms vs music -11.9 dB  [target/median] circle reveal
+ 15.42s click-soft   gain  0.578 in-band + 1.0 dB  2-8k + 1.6 dB  fx-rms vs music -13.9 dB  [hf-cap/median] Mia's tap
+ 17.35s pop          gain  0.234 in-band + 4.6 dB  2-8k +-0.0 dB  fx-rms vs music -13.2 dB  [target/median] Sam closes the box
+ 18.30s whoosh-short gain  0.156 in-band + 1.9 dB  2-8k + 0.0 dB  fx-rms vs music -11.7 dB  [target/median] back to menu
+ 18.85s click-soft   gain  0.291 in-band + 0.5 dB  2-8k + 2.9 dB  fx-rms vs music -20.7 dB  [hf-cap/median] Play vs Computer
+ 19.45s click-soft   gain  0.578 in-band + 2.2 dB  2-8k + 3.0 dB  fx-rms vs music -14.3 dB  [hf-cap/median] Hard
+ 20.35s pop          gain  0.234 in-band + 1.7 dB  2-8k +-0.0 dB  fx-rms vs music -13.5 dB  [target/median] Computer closes a box
+ 21.72s click-soft   gain  0.378 in-band + 0.9 dB  2-8k + 2.9 dB  fx-rms vs music -18.4 dB  [hf-cap/median] Create Room
+ 21.90s whoosh-short gain  0.156 in-band + 4.7 dB  2-8k + 0.2 dB  fx-rms vs music -12.8 dB  [target/median] pull back to two phones
+ 22.60s click-soft   gain  0.578 in-band + 0.0 dB  2-8k + 1.1 dB  fx-rms vs music -14.0 dB  [hf-cap/median] Join Room
+ 23.10s click-soft   gain  0.559 in-band + 0.0 dB  2-8k + 3.0 dB  fx-rms vs music -15.3 dB  [hf-cap/median] Mia's online move
+ 23.56s pop          gain  0.234 in-band + 1.6 dB  2-8k +-0.0 dB  fx-rms vs music -14.0 dB  [target/median] move lands on Leo's board
+ 24.10s whoosh-short gain  0.156 in-band + 2.0 dB  2-8k + 0.5 dB  fx-rms vs music -11.8 dB  [target/median] push into the line
+ 25.90s chime        gain  0.323 in-band + 3.2 dB  2-8k + 3.4 dB  fx-rms vs music -18.3 dB  [target/median] mark's box pops
