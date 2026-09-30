@@ -113,7 +113,7 @@ export default {
     baseBlob.rotation.x = -Math.PI / 2; baseBlob.position.y = groundY + 0.4; scene.add(baseBlob);
 
     // ---------------- cubes & towers ----------------
-    const cubeGeo = new RoundedBoxGeometry(1, 1, 1, 5, L.cubeR);
+    const cubeGeo = new RoundedBoxGeometry(1, 1, 1, 5, L.cubeR / L.cube);
     const cubeMat = {};
     for (const p of ['p1', 'p2']) cubeMat[p] = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(L.cubeColor[p]), roughness: 0.34, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.22 });
     // the fly-through cube: same look, plus a flat brand-blue blend at the end
@@ -128,7 +128,7 @@ export default {
     const towers = { p1: L.tower.p1, p2: L.tower.p2 };
     const towerBlobs = {};
     for (const p of ['p1', 'p2']) {
-      const b = new THREE.Mesh(new THREE.PlaneGeometry(s * 2.1, s * 2.1), blobMat(0));
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(s * 3.0, s * 1.9), blobMat(0));
       b.rotation.x = -Math.PI / 2; b.position.set(towers[p].x, groundY + 0.5, towers[p].z); scene.add(b); towerBlobs[p] = b;
     }
     const count = { p1: 0, p2: 0 };
@@ -183,7 +183,7 @@ export default {
     const qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), eul = new THREE.Euler(), mTmp = new THREE.Matrix4(), mCam = new THREE.Matrix4();
     const vS = new THREE.Vector3(), vE = new THREE.Vector3(), sc3 = new THREE.Vector3();
 
-    function restPose(cb) { return { x: towers[cb.o].x, y: groundY + s * (cb.n + 0.5), z: towers[cb.o].z }; }
+    function restPose(cb) { const row = Math.floor(cb.n / 2), col = cb.n % 2; return { x: towers[cb.o].x + (col - 0.5) * s * L.colSign[cb.o], y: groundY + s * (row + 0.5), z: towers[cb.o].z }; }
 
     function poseCube(cb, t) {
       const u = seg(t, cb.t0, cb.t0 + cb.dur);
@@ -278,7 +278,7 @@ export default {
         const e = chips[p];
         if (a <= 0 || out >= 1) { e.style.visibility = 'hidden'; continue; }
         e.style.visibility = 'visible';
-        const pt = project(R.x, R.y + s / 2 + L.chipLift, R.z);
+        const pt = project(towers[p].x, R.y + s / 2 + L.chipLift, R.z);
         const sc = lerp(0.55, 1, outBack(a, 2.2)) * lerp(1, 0.6, inCubic(out));
         const x = pt.x - chipSize[p].w / 2, y = pt.y - chipSize[p].h - 10 * L.ui - 26 * L.ui * (1 - outCubic(a)) - 60 * L.ui * inCubic(out);
         e.style.transform = `translate(${x}px,${y}px) scale(${sc})`;
