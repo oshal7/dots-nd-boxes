@@ -17,6 +17,7 @@ export function spline(t, ks, slope0 = 0) {
 
 // camera keys: [time, value]; the final keys continue gently past the dive start so the spline never stops.
 const keys = (arr) => arr.map((v, i) => [TK[i], v]);
+const FOV0 = (half) => 2 * Math.atan(half / PERSPECTIVE) * 180 / Math.PI; // handoff FOV
 const EL0 = 90 - TILT_DEG; // camera elevation that reproduces the CSS tilt at the cut
 const TK = [10.0, 10.8, 11.6, 12.3, 13.0, 13.5, 14.0];
 
@@ -26,7 +27,7 @@ export function cfg(V, k) {
   const cube = 0.7 * G;
   const base = {
     margin: 0.42 * G, slabT: 16 * k, baseH: 30 * k, baseOut: 22 * k, baseColor: C.ink,
-    elV0: EL_V0, cube, cubeR: 0.17 * cube, cubeColor: { p1: '#1d5cc7', p2: FILL.p2 },  // p1 steered so the LIT top face reads #2f6bd8
+    elV0: EL_V0, cube, cubeR: 0.17 * cube, cubeColor: { p1: FILL.p1, p2: FILL.p2 },  // brand-true: a sunlit top face reads exactly these (see score3d.js)
     arc: 0.42 * cube + 20 * k, chipLift: 0.22 * cube,
     firstLaunch: 10.28, gap0: 0.19, gap1: 0.09,
     // key: big soft sun from upper-left-front (shadows fall right/back); warm rim behind-right; soft sky fill
@@ -41,7 +42,8 @@ export function cfg(V, k) {
       cam: {
         el: keys([EL0, 48, 46, 43.5, 40, 38, 37]),
         az: keys([0, 7, 13, 18, 22, 25, 26]),
-        dist: keys([PERSPECTIVE, ...[1330, 1400, 1490, 1550, 1500, 1480].map((v) => v * k)]),
+        fov: keys([0, 0, 0, 0, 0, 0, 0].map(() => FOV0(540))),
+        dist: keys([PERSPECTIVE, ...[1330, 1400, 1490, 1560, 1560, 1540].map((v) => v * k)]),
         tx: keys([0, 70, 20, 30, 115, 145, 155].map((v) => v * k)),
         ty: keys([0, 50, 100, 150, 175, 185, 190].map((v) => v * k)),
         tz: keys([0, 10, 20, 30, 45, 50, 52].map((v) => v * k)),
@@ -57,10 +59,11 @@ export function cfg(V, k) {
     tower: { p2: { x: -1.05 * G, z: tz }, p1: { x: 1.05 * G, z: tz } },
     cam: {
       el: keys([EL0, 49, 47, 44.5, 41, 39, 38]),
-      az: keys([0, 4, 7, 9, 11, 12, 12]),
-      dist: keys([PERSPECTIVE, 2000, 2100, 2120, 2060, 2020, 2000]),
+      az: keys([0, 8, 16, 22, 26, 28, 28]),
+      fov: keys([FOV0(960), 47, 43, 42, 42, 42, 42]),
+      dist: keys([PERSPECTIVE, 2450, 2600, 2600, 2540, 2500, 2480]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
-      ty: keys([0, 20, 40, 70, 95, 100, 100]),
+      ty: keys([0, 80, 170, 270, 330, 340, 340]),
       tz: keys([0, 150, 280, 380, 430, 440, 442]),
     },
     winSize: 132, winFrom: -160,

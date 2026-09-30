@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
-import { C, FILL, clamp, lerp, seg, smooth, smoother, outCubic, outBack, inCubic, outQuint, div, css } from '../shared/lib.js';
+import { C, FILL, clamp, lerp, seg, smooth, smoother, outCubic, outBack, inCubic, outQuint, cssBezier, div, css } from '../shared/lib.js';
 import { hand, PERSPECTIVE } from '../shared/handoff.js';
 import { loadGame, finalState, boardCanvas } from './score3d-board.js';
 import { spline, cfg } from './score3d-layout.js';
@@ -26,7 +26,7 @@ export default {
     const bcx = Cb.x + 2 * G, bcy = Cb.y + 2 * G;            // board centre in film px (= screen centre)
     const m = L.margin, S = 4 * G + 2 * m;                    // slab top face size
     const th = L.slabT, bh = L.baseH, bo = L.baseOut;         // slab thickness, base height, base outset
-    const groundY = -(th + bh);
+    const groundY = -(th + bh + 2 * k);
     const s = L.cube;                                         // cube edge
     const q = Math.min(2048 / S, 3);                          // texels per px
     const [cvA, cvB] = await Promise.all([
@@ -50,14 +50,14 @@ export default {
     scene.environmentIntensity = L.light.env;
 
     const fov0 = 2 * Math.atan((H / 2) / PERSPECTIVE) * 180 / Math.PI;
-    const camera = new THREE.PerspectiveCamera(fov0, W / H, 2, 20000);
+    const camera = new THREE.PerspectiveCamera(fov0, W / H, 20, 16000);
 
     // ---------------- lights: one big soft key upper-left-front, warm rim behind-right, soft sky fill ----------------
     // Lights are constant: only the top face's flat→lit blend changes at the hand-off, so nothing dims or pops.
     scene.add(new THREE.HemisphereLight(0xfff6e8, 0xd9ccb0, L.light.hemi));
     const key = new THREE.DirectionalLight(0xfffaf2, L.light.key);
     key.position.set(...L.light.keyPos); key.castShadow = true;
-    key.shadow.mapSize.set(4096, 4096); key.shadow.radius = 9; key.shadow.blurSamples = 16; key.shadow.bias = -0.0003; key.shadow.normalBias = 0.8;
+    key.shadow.mapSize.set(4096, 4096); key.shadow.radius = 9; key.shadow.blurSamples = 16; key.shadow.bias = -0.0008; key.shadow.normalBias = 2.0;
     const sc = key.shadow.camera; const ext = 1250 * k; sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 200; sc.far = 8000 * k;
     scene.add(key); scene.add(key.target);
     const rim = new THREE.DirectionalLight(0xffb36b, L.light.rim); rim.position.set(...L.light.rimPos);
@@ -116,20 +116,43 @@ export default {
 
     // ---------------- cubes & towers ----------------
     const cubeGeo = new RoundedBoxGeometry(1, 1, 1, 5, L.cubeR / L.cube);
-    const cubeMat = {}, ghostMat = {};
-    for (const p of ['p1', 'p2']) {
-      cubeMat[p] = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(L.cubeColor[p]), roughness: 0.34, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.22 });
-      ghostMat[p] = [0.34, 0.18].map((o) => { const g = cubeMat[p].clone(); g.transparent = true; g.opacity = o; g.depthWrite = false; return g; });
-    }
-    // Mia's top cube: the camera dives onto its top face; the face is steered to flat brand blue on the last frames
-    const flyU = { uFlat: { value: 0 }, uFlatCol: { value: new THREE.Color(BLUE) } };
-    const flyMat = cubeMat.p1.clone();
-    flyMat.onBeforeCompile = (sh) => {
-      Object.assign(sh.uniforms, flyU);
-      sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uFlat; uniform vec3 uFlatCol;')
-        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, sRGBTransferOETF(vec4(uFlatCol, 1.0)).rgb, uFlat);');
+    // Cube colour is brand-true by construction: the physical lighting (white albedo) only supplies a shading factor
+    // relative to a sunlit top face (uLref, measured below), applied to the brand colour in sRGB and written after
+    // tone mapping. Specular/clearcoat adds at most ~+33 levels. A sunlit top face therefore reads exactly FILL[p].
+    const srgbVec = (hex) => { const c = new THREE.Color(); c.setHex(parseInt(hex.slice(1), 16), THREE.NoColorSpace); return new THREE.Vector3(c.r, c.g, c.b); };
+    const cubeShared = { uLref: { value: 1 }, uCal: { value: 0 } };
+    const makeCubeMat = (p, fly) => {
+      const mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.34, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.22 });
+      const u = { ...cubeShared, uBrand: { value: srgbVec(L.cubeColor[p]) }, uFlat: { value: 0 }, uFlatCol: { value: srgbVec(BLUE) }, uSpec: { value: 1 } };
+      mat.userData.u = u;
+      mat.onBeforeCompile = (sh) => {
+        Object.assign(sh.uniforms, u);
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform float uLref; uniform float uCal; uniform vec3 uBrand; uniform float uFlat; uniform vec3 uFlatCol; uniform float uSpec;')
+          .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+            {
+              const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
+              float Ld = dot(totalDiffuse, LUM);
+              if (uCal > 0.5) { gl_FragColor.rgb = vec3(Ld / 4.0); }
+              else {
+                float sh = clamp(Ld / uLref, 0.0, 1.4);
+                float f = sh < 1.0 ? mix(0.66, 1.0, sh) : mix(1.0, 1.06, (sh - 1.0) / 0.4);
+                vec3 c = uBrand * f;
+                vec3 sp = totalSpecular;
+                #ifdef USE_CLEARCOAT
+                  sp += (clearcoatSpecularDirect + clearcoatSpecularIndirect) * material.clearcoat;
+                #endif
+                c += vec3(1.0 - exp(-dot(sp, LUM) * 1.5)) * 0.13 * uSpec;
+                gl_FragColor.rgb = mix(c, uFlatCol, uFlat);
+              }
+            }`);
+      };
+      mat.customProgramCacheKey = () => 'score3d-cube';
+      return mat;
     };
+    const cubeMat = { p1: makeCubeMat('p1'), p2: makeCubeMat('p2') };
+    // Mia's top cube: the camera dives onto its top face; the face is steered to flat brand blue on the last frames
+    const flyMat = makeCubeMat('p1', true), flyU = flyMat.userData.u;
     const towers = { p1: L.tower.p1, p2: L.tower.p2 };
     const towerBlobs = {};
     for (const p of ['p1', 'p2']) {
@@ -143,8 +166,7 @@ export default {
       const last = o === 'p1' && n === 9;
       const mesh = new THREE.Mesh(cubeGeo, last ? flyMat : cubeMat[o]);
       mesh.castShadow = true; mesh.receiveShadow = true; mesh.visible = false; scene.add(mesh);
-      const ghosts = ghostMat[o].map((gm) => { const g = new THREE.Mesh(cubeGeo, gm); g.visible = false; g.renderOrder = 2; scene.add(g); return g; });
-      return { bx, o, n, r, c, idx: r * 4 + c, mesh, ghosts, last,
+      return { bx, o, n, r, c, idx: r * 4 + c, mesh, last,
         x0: Cb.x + (c + 0.5) * G - bcx, z0: Cb.y + (r + 0.5) * G - bcy };
     });
     // launch schedule: intervals shrink (the stack accelerates); flight ≈ 1.9 × interval → ≤ 2 airborne
@@ -189,30 +211,31 @@ export default {
     const sph = (t) => ({ el: spline(t, L.cam.el, L.elV0) * Math.PI / 180, az: spline(t, L.cam.az) * Math.PI / 180, D: spline(t, L.cam.dist),
       tgt: new THREE.Vector3(spline(t, L.cam.tx), spline(t, L.cam.ty), spline(t, L.cam.tz)) });
     const place = (tgt, el, az, D) => camera.position.set(tgt.x + D * Math.cos(el) * Math.sin(az), tgt.y + D * Math.sin(el), tgt.z + D * Math.cos(el) * Math.cos(az));
+    const DIVE = cssBezier(0.72, 0, 0.9, 1);   // accelerating dive that settles over the last few frames
+    const T_DIVE_END = T_BLUE - 0.017;
     function camPose(t) {
-      const b = sph(t);
-      let tgt = b.tgt, el = b.el, az = b.az, D = b.D, fov = fov0;
+      const b = sph(t), fovB = spline(t, L.cam.fov);
       if (t > T_DIVE) {
-        // camera dive onto the top face of Mia's tower: accelerating, face-on, FOV narrows a little
-        const u = seg(t, T_DIVE, T_BLUE - 0.085);
+        // camera dive onto the top face of Mia's tower. At u = 0 this is exactly the base pose (position, target, FOV);
+        // the camera is re-expressed in spherical coordinates about the face and moves in from there.
+        const u = seg(t, T_DIVE, T_DIVE_END);
         place(b.tgt, b.el, b.az, b.D);
         const o = camera.position.clone().sub(face), d0 = o.length();
         const el0 = Math.asin(o.y / d0), az0 = Math.atan2(o.x, o.z);
-        const fov1 = fov0 * 0.8;
+        const fov1 = fovB * 0.8;
         const tanMax = Math.tan(fov1 * Math.PI / 360) * Math.max(1, W / H);
-        const d1 = 0.62 * (s / 2 - L.cubeR) / tanMax;
-        const eo = smoother(u), ed = Math.pow(u, 2.0);
-        tgt = b.tgt.clone().lerp(face, smoother(clamp(u * 1.15)));
-        el = lerp(el0, 84 * Math.PI / 180, eo); az = lerp(az0, 0, eo);
-        const dd = d0 * Math.pow(d1 / d0, ed) * (1 - 0.06 * seg(t, T_BLUE - 0.085, T_BLUE));  // keep creeping in while the face turns flat blue
-        fov = lerp(fov0, fov1, smooth(u));
-        camera.fov = fov; camera.updateProjectionMatrix();
-        place(tgt, el, az, dd);
+        const d1 = 0.5 * (s / 2 - L.cubeR) / tanMax;
+        const e = DIVE(u), eo = smoother(u);
+        const tgt = b.tgt.clone().lerp(face, eo);
+        const el = lerp(el0, 84 * Math.PI / 180, eo), az = lerp(az0, 0, eo);
+        const dd = d0 * Math.pow(d1 / d0, e);
+        camera.fov = lerp(fovB, fov1, eo); camera.updateProjectionMatrix();
+        camera.position.set(face.x + dd * Math.cos(el) * Math.sin(az), face.y + dd * Math.sin(el), face.z + dd * Math.cos(el) * Math.cos(az));
         camera.up.set(0, 1, 0); camera.lookAt(tgt); camera.updateMatrixWorld(true);
         return;
       }
-      if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
-      place(tgt, el, az, D); camera.up.set(0, 1, 0); camera.lookAt(tgt); camera.updateMatrixWorld(true);
+      if (camera.fov !== fovB) { camera.fov = fovB; camera.updateProjectionMatrix(); }
+      place(b.tgt, b.el, b.az, b.D); camera.up.set(0, 1, 0); camera.lookAt(b.tgt); camera.updateMatrixWorld(true);
     }
 
     function cubeAt(cb, t, mesh) {
@@ -233,19 +256,10 @@ export default {
       mesh.rotation.copy(eul); mesh.scale.set(sxx, syy, sxx);
       return u;
     }
-    const pA = new THREE.Vector3();
     function poseCube(cb, t) {
-      if (t < cb.t0) { cb.mesh.visible = false; cb.ghosts.forEach((g) => (g.visible = false)); return; }
+      if (t < cb.t0) { cb.mesh.visible = false; return; }
       cb.mesh.visible = true;
-      const u = cubeAt(cb, t, cb.mesh);
-      // light motion blur: two trailing sub-frame samples while the cube moves fast
-      pA.copy(cb.mesh.position);
-      cb.ghosts.forEach((g, j) => {
-        if (u <= 0 || u >= 1) { g.visible = false; return; }
-        cubeAt(cb, t - (j + 1) / 150, g);
-        const dist = g.position.distanceTo(pA);
-        g.visible = dist > 5 * k; g.material.opacity = [0.34, 0.18][j] * clamp((dist - 5 * k) / (14 * k));
-      });
+      cubeAt(cb, t, cb.mesh);
     }
 
     function pose(t) {
@@ -253,10 +267,10 @@ export default {
       topU.uFlat.value = 1 - smoother(seg(t, T0, T0 + 0.5));
       const grow = smoother(seg(t, T0, T0 + 0.5));
       const thN = th * grow, bhN = bh * grow;
-      slab.visible = thN > 0.05; slab.scale.set(S, Math.max(thN, 0.01), S); slab.position.y = -thN / 2 - 0.25;
+      slab.visible = thN > 0.05; slab.scale.set(S, Math.max(thN, 0.01), S); slab.position.y = -thN / 2 - 2 * k;  // top sits clearly below the textured face (no z-fighting)
       const bw = S + 2 * bo * grow;
-      base.visible = bhN > 0.05; base.scale.set(bw, Math.max(bhN, 0.01), bw); base.position.y = -thN - bhN / 2 - 0.25;
-      ground.position.y = -thN - bhN - 0.3;
+      base.visible = bhN > 0.05; base.scale.set(bw, Math.max(bhN, 0.01), bw); base.position.y = -thN - bhN / 2 - 2 * k;
+      ground.position.y = -thN - bhN - 2 * k - 0.3;
       baseBlob.position.y = ground.position.y + 0.3; baseBlob.scale.set(bw * 1.1, bw * 1.1, 1); baseBlob.material.opacity = 0.34 * grow;
       shadowMat.opacity = 0.26 * grow;
       for (const p in towerBlobs) towerBlobs[p].position.y = ground.position.y + 0.35;
@@ -269,13 +283,14 @@ export default {
         towerBlobs[p].material.opacity = 0.62 * smoother(seg(t, landT(first) - 0.08, landT(first) + 0.05));
       }
       flyU.uFlat.value = smoother(seg(t, T_BLUE - 0.075, T_BLUE - 0.017));
+      flyU.uSpec.value = 1 - smoother(seg(t, T_DIVE + 0.05, T_DIVE + 0.3));  // no hotspot on the face that becomes the field
     }
 
     // lit paper must read paper-warm: calibrate the top material so its lit paper matches TOP_LIT (measured on the GPU)
     {
       const gl = renderer.getContext(), buf = new Uint8Array(4 * 25);
       const tgt = new THREE.Color(TOP_LIT);
-      pose(T0 + 0.6); topU.uFlat.value = 0; cubes.forEach((c) => { c.mesh.visible = false; c.ghosts.forEach((g) => (g.visible = false)); });
+      pose(T0 + 0.6); topU.uFlat.value = 0; cubes.forEach((c) => { c.mesh.visible = false; });
       const sp = project(0, 0, S / 2 - m * 0.5);
       for (let it = 0; it < 4; it++) {
         renderer.render(scene, camera);
@@ -288,13 +303,24 @@ export default {
       }
     }
 
+    // cube shading reference: luminance of the white-albedo lighting on a sunlit top face (Mia's top cube at 13.4)
+    {
+      const gl = renderer.getContext(), buf = new Uint8Array(4 * 25);
+      pose(13.4); cubeShared.uCal.value = 1;
+      const sp = project(face.x, face.y, face.z);
+      renderer.render(scene, camera);
+      gl.readPixels(Math.round(sp.x) - 2, H - 1 - Math.round(sp.y) - 2, 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      let a = 0; for (let i = 0; i < 25; i++) a += buf[i * 4 + 1]; a /= 25 * 255;
+      cubeShared.uLref.value = Math.max(0.05, 4 * a); cubeShared.uCal.value = 0;
+    }
+
     function overlay(t) {
       const tops = {};
       for (const p of ['p1', 'p2']) {
         const lc = lastOf[p], R = restPose(lc);
         tops[p] = project(towers[p].x, R.y + s / 2 + L.chipLift, R.z);
         const ta = landT(lc) + 0.02;
-        const a = seg(t, ta, ta + 0.38), out = seg(t, T_DIVE - 0.16, T_DIVE + 0.02);
+        const a = seg(t, ta, ta + 0.38), out = seg(t, T_DIVE - 0.24, T_DIVE - 0.04);
         const e = chips[p];
         if (a <= 0 || out >= 1) { e.style.visibility = 'hidden'; continue; }
         e.style.visibility = 'visible';
@@ -305,7 +331,7 @@ export default {
         e.style.opacity = clamp(a * 3) * (1 - inCubic(out));
       }
       // "Mia Wins!" — placed relative to the projected top of Mia's tower
-      const wa = seg(t, 12.6, 13.05), wo = seg(t, T_DIVE - 0.14, T_DIVE + 0.06);
+      const wa = seg(t, 12.6, 13.05), wo = seg(t, T_DIVE - 0.26, T_DIVE - 0.06);
       if (wa <= 0 || wo >= 1) win.style.visibility = 'hidden';
       else {
         win.style.visibility = 'visible';
