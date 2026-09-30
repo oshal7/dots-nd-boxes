@@ -236,7 +236,7 @@ export default {
       mTmp.compose(pos, qq, sc3.set(s, s, s)).premultiply(camera.matrixWorld);
       mTmp.decompose(cb.mesh.position, cb.mesh.quaternion, cb.mesh.scale);
       cb.mesh.visible = true;
-      flyU.uFlat.value = smoother(seg(t, T_BLUE - 0.32, T_BLUE - 0.04));
+      flyU.uFlat.value = smoother(seg(t, T_BLUE - 0.26, T_BLUE - 0.04));
     }
 
     function pose(t) {
