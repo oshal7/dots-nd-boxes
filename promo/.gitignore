@@ -1,0 +1,15 @@
+node_modules/
+renders/
+lab/
+review/**/*.mp4
+review/**/snap*/
+review/**/frames/
+assets/music/*.wav
+h/vendor
+h/shared
+h/scenes
+h/assets
+v/vendor
+v/shared
+v/scenes
+v/assets

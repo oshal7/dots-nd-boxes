@@ -1,0 +1,25 @@
+master: I -16.9 LUFS, LRA 2.2 LU, true-peak-ish -5.4 dBFS
+music-only: I -17.0 LUFS, LRA 2.2 LU, peak -5.6 dBFS
+effects add +0.10 LU to the integrated loudness
+
+  1.00s whoosh-short gain  0.090 in-band + 2.5 dB  2-8k +-0.0 dB  fx-rms vs music -12.2 dB  [target] s01 pull-back
+  3.85s whoosh-short gain  0.146 in-band + 2.7 dB  2-8k + 0.0 dB  fx-rms vs music -12.0 dB  [target] s02 push-in
+  4.25s click-soft   gain  0.637 in-band +-0.0 dB  2-8k + 2.8 dB  fx-rms vs music -12.9 dB  [hf-cap] s03 tap
+  5.75s pop          gain  0.172 in-band + 2.7 dB  2-8k + 0.0 dB  fx-rms vs music -17.4 dB  [target] s04 capture
+  6.60s whoosh-short gain  0.184 in-band + 2.6 dB  2-8k + 0.1 dB  fx-rms vs music -10.1 dB  [target] s04 whip to chain
+  7.10s pop          gain  0.403 in-band + 2.7 dB  2-8k +-0.0 dB  fx-rms vs music -10.1 dB  [target] chain 2x
+  7.40s pop          gain  0.178 in-band + 2.5 dB  2-8k + 0.0 dB  fx-rms vs music -16.6 dB  [target] chain 3x
+  7.70s pop          gain  0.190 in-band + 2.5 dB  2-8k +-0.0 dB  fx-rms vs music -16.0 dB  [target] chain 4x
+  8.00s pop          gain  0.247 in-band + 2.6 dB  2-8k +-0.0 dB  fx-rms vs music -13.3 dB  [target] chain 5x
+  8.30s whoosh-short gain  0.099 in-band + 2.5 dB  2-8k +-0.0 dB  fx-rms vs music -15.3 dB  [target] s05 pull-back
+ 12.60s chime        gain  0.475 in-band + 2.4 dB  2-8k + 2.9 dB  fx-rms vs music -14.1 dB  [hf-cap] Mia Wins!
+ 13.40s whoosh-short gain  0.203 in-band + 2.6 dB  2-8k + 0.1 dB  fx-rms vs music  -7.7 dB  [target] tower fly-through
+ 15.00s whoosh-short gain  0.184 in-band + 2.6 dB  2-8k +-0.0 dB  fx-rms vs music -10.3 dB  [target] circle reveal
+ 17.95s pop          gain  0.282 in-band + 2.6 dB  2-8k + 0.0 dB  fx-rms vs music -12.9 dB  [target] Sam closes box
+ 18.30s whoosh-short gain  0.190 in-band + 2.6 dB  2-8k + 0.0 dB  fx-rms vs music -10.0 dB  [target] screen swipe
+ 18.90s click-soft   gain  0.343 in-band + 1.2 dB  2-8k + 2.8 dB  fx-rms vs music -19.3 dB  [hf-cap] tap Hard
+ 20.20s pop          gain  0.197 in-band + 2.5 dB  2-8k +-0.0 dB  fx-rms vs music -15.1 dB  [target] Computer closes box
+ 20.70s whoosh-short gain  0.109 in-band + 2.6 dB  2-8k +-0.0 dB  fx-rms vs music -15.0 dB  [target] pull back to two phones
+ 22.60s click-soft   gain  0.726 in-band + 0.0 dB  2-8k + 3.0 dB  fx-rms vs music -12.0 dB  [hf-cap] Join Room tap
+ 23.80s whoosh-short gain  0.113 in-band + 2.6 dB  2-8k + 0.0 dB  fx-rms vs music -14.3 dB  [target] push into line
+ 25.90s chime        gain  0.273 in-band + 2.5 dB  2-8k + 2.6 dB  fx-rms vs music -19.8 dB  [target] mark box pop

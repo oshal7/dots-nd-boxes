@@ -1,0 +1,20 @@
+[
+ ["whoosh-short", 1.10, "s01 pull-back"],
+ ["whoosh-short", 3.95, "s02 push-in"],
+ ["click-soft", 4.25, "s03 tap"],
+ ["pop", 5.75, "s04 capture"],
+ ["whoosh-short", 6.70, "s04 whip to chain"],
+ ["pop", 7.10, "chain 2x"], ["pop", 7.40, "chain 3x"], ["pop", 7.70, "chain 4x"], ["pop", 8.00, "chain 5x"],
+ ["whoosh-short", 8.40, "s05 pull-back"],
+ ["chime", 12.60, "Mia Wins!"],
+ ["whoosh-short", 13.50, "tower fly-through"],
+ ["whoosh-short", 15.10, "circle reveal"],
+ ["pop", 17.95, "Sam closes box"],
+ ["whoosh-short", 18.40, "screen swipe"],
+ ["click-soft", 18.90, "tap Hard"],
+ ["pop", 20.20, "Computer closes box"],
+ ["whoosh-short", 20.80, "pull back to two phones"],
+ ["click-soft", 22.60, "Join Room tap"],
+ ["whoosh-short", 23.90, "push into line"],
+ ["chime", 25.90, "mark box pop"]
+]

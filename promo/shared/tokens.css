@@ -1,0 +1,77 @@
+/* ============================================================
+   Film tokens — copied from the game's own styles.css (:root and
+   component rules) so the film uses the product's real look.
+   ============================================================ */
+@font-face { font-family: 'Caveat'; font-weight: 400; src: url('../vendor/fonts/caveat-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Caveat'; font-weight: 700; src: url('../vendor/fonts/caveat-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Patrick Hand'; font-weight: 400; src: url('../vendor/fonts/patrick-hand-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 400; src: url('../vendor/fonts/nunito-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 600; src: url('../vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 700; src: url('../vendor/fonts/nunito-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Nunito'; font-weight: 800; src: url('../vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); }
+
+:root {
+  --paper: #f7f2e7;
+  --paper-2: #f1ead9;
+  --card: #fffdf7;
+  --ink: #38352f;
+  --ink-soft: #857f72;          /* decoration only: 3.57:1 on paper, never for text */
+  --line: #e3dbc8;
+  --track: #d8cfb8;
+  --dot: #4a463d;
+
+  --accent: #3f6fd8;
+  --accent-ink: #2f57b0;        /* blue TEXT on paper: 6.05:1 */
+  --p1: #2f6bd8;                /* blue   (white text on it 4.98:1) */
+  --p2: #e0496b;                /* red    */
+  --p3: #23a06b;                /* green  */
+  --p4: #e88a24;                /* orange */
+  /* deep tones: used only where white text sits on a player colour (>= 4.5:1) */
+  --p2-deep: #c8385c;
+  --p3-deep: #1c7f53;
+  --p4-deep: #a85d15;
+
+  --font-title: 'Caveat', cursive;
+  --font-hand: 'Patrick Hand', 'Caveat', cursive;
+  --font-ui: 'Nunito', system-ui, sans-serif;
+  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-weight: 600; -webkit-font-smoothing: antialiased; }
+#root { position: relative; overflow: hidden; background: var(--paper); }
+.layer { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+.abs { position: absolute; }
+.cv { font-family: var(--font-title); font-weight: 700; line-height: 0.92; color: var(--ink); white-space: nowrap; }
+.hand { font-family: var(--font-hand); font-weight: 400; }
+.ui { font-family: var(--font-ui); }
+svg { overflow: visible; }
+
+/* ---------- the game's components, verbatim sizes (scale the wrapper, not the rules) ---------- */
+.g-card { background: var(--card); border: 2px solid var(--ink); border-radius: 16px; box-shadow: 5px 6px 0 rgba(56,53,47,0.13); }
+.btn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 15px 20px;
+  border: 2px solid var(--ink); border-radius: 14px; background: var(--card); color: var(--ink);
+  font-family: var(--font-hand); font-size: 20px; font-weight: 400; letter-spacing: 0.3px; box-shadow: 3px 3px 0 rgba(56,53,47,0.16); }
+.btn small { font-family: var(--font-ui); font-weight: 600; font-size: 12px; color: #6b655a; letter-spacing: 0; }
+.btn--primary { background: var(--p1); border-color: var(--accent-ink); color: #fff; box-shadow: 3px 3px 0 var(--accent-ink); }
+.btn--primary small { color: #fff; }
+.field-label { display: block; font-size: 13px; color: #6b655a; margin-bottom: 8px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+.chips { display: flex; gap: 8px; }
+.chip { flex: 1 1 auto; min-width: 62px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 9px 12px;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-family: var(--font-hand); font-size: 18px; font-weight: 400; }
+.chip.is-selected { border-color: var(--accent); background: rgba(63,111,216,0.12); color: var(--accent-ink); box-shadow: 2px 2px 0 rgba(63,111,216,0.25); }
+.player-card { --pc: var(--p1); position: relative; display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+  border: 2px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 2px 3px 0 rgba(56,53,47,0.08); min-width: 0; }
+.player-card .player-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; background: var(--pc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 20%, transparent); }
+.player-meta { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.player-name { font-family: var(--font-hand); font-size: 17px; font-weight: 400; color: var(--ink); white-space: nowrap; }
+.player-score { font-family: var(--font-ui); font-size: 26px; font-weight: 800; color: var(--pct, var(--pc)); }
+.active-badge { margin-left: auto; font-family: var(--font-ui); font-size: 10px; font-weight: 800; letter-spacing: 0.5px; white-space: nowrap;
+  padding: 4px 8px; border-radius: 20px; background: color-mix(in srgb, var(--pc) 18%, transparent); color: var(--pct, var(--pc)); }
+.player-card.is-active { border-color: var(--pc); box-shadow: 3px 4px 0 color-mix(in srgb, var(--pc) 35%, transparent); }
+.status-pill { padding: 6px 15px; border-radius: 20px; background: var(--card); border: 2px solid var(--ink); font-family: var(--font-hand); font-size: 16px; color: var(--ink); box-shadow: 2px 2px 0 rgba(56,53,47,0.14); white-space: nowrap; }
+.room-code-box { background: var(--paper); border: 2px dashed var(--accent); border-radius: 12px; padding: 14px; text-align: center; }
+.room-code-label { display: block; font-size: 12px; color: #6b655a; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+.room-code { font-family: var(--font-hand); font-size: 40px; font-weight: 400; letter-spacing: 8px; color: var(--accent-ink); }
+.g-input { width: 100%; padding: 11px 14px; border: 2px solid var(--line); border-radius: 11px; background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 15px; font-weight: 700; }
+.float-text { font-family: var(--font-title); font-weight: 700; white-space: nowrap; text-shadow: 0 2px 3px rgba(255,255,255,0.8); }
