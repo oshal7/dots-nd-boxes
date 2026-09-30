@@ -211,7 +211,9 @@ export default {
     const sph = (t) => ({ el: spline(t, L.cam.el, L.elV0) * Math.PI / 180, az: spline(t, L.cam.az) * Math.PI / 180, D: spline(t, L.cam.dist),
       tgt: new THREE.Vector3(spline(t, L.cam.tx), spline(t, L.cam.ty), spline(t, L.cam.tz)) });
     const place = (tgt, el, az, D) => camera.position.set(tgt.x + D * Math.cos(el) * Math.sin(az), tgt.y + D * Math.sin(el), tgt.z + D * Math.cos(el) * Math.cos(az));
-    const DIVE = cssBezier(0.72, 0, 0.9, 1);   // accelerating dive that settles over the last few frames
+    // dive ease: accelerates (power 2.2) until u = 0.85, then a quadratic ease-out with matched slope settles it over the
+    // last ~4 frames (no dead stop, no velocity step)
+    const DIVE = (u) => { const a = 0.85, E = 0.8375; return u < a ? E * Math.pow(u / a, 2.2) : 1 - (1 - E) * Math.pow(1 - (u - a) / (1 - a), 2); };
     const T_DIVE_END = T_BLUE - 0.017;
     function camPose(t) {
       const b = sph(t), fovB = spline(t, L.cam.fov);
@@ -224,8 +226,8 @@ export default {
         const el0 = Math.asin(o.y / d0), az0 = Math.atan2(o.x, o.z);
         const fov1 = fovB * 0.8;
         const tanMax = Math.tan(fov1 * Math.PI / 360) * Math.max(1, W / H);
-        const d1 = 0.5 * (s / 2 - L.cubeR) / tanMax;
-        const e = DIVE(u), eo = smoother(u);
+        const d1 = 0.4 * (s / 2 - L.cubeR) / tanMax;
+        const e = DIVE(u), eo = smoother(Math.pow(e, 0.75));
         const tgt = b.tgt.clone().lerp(face, eo);
         const el = lerp(el0, 84 * Math.PI / 180, eo), az = lerp(az0, 0, eo);
         const dd = d0 * Math.pow(d1 / d0, e);

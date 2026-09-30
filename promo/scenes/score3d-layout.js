@@ -61,14 +61,14 @@ export function cfg(V, k) {
       el: keys([EL0, 49, 47, 44.5, 41, 39, 38]),
       az: keys([0, 8, 16, 22, 26, 28, 28]),
       fov: keys([FOV0(960), 47, 43, 42, 42, 42, 42]),
-      dist: keys([PERSPECTIVE, 2450, 2600, 2600, 2540, 2500, 2480]),
+      dist: keys([PERSPECTIVE, 2300, 2330, 2420, 2520, 2490, 2470]),
       tx: keys([0, -20, -40, -40, -30, -30, -30]),
-      ty: keys([0, 80, 170, 270, 330, 340, 340]),
+      ty: keys([0, 120, 240, 340, 400, 410, 410]),
       tz: keys([0, 150, 280, 380, 430, 440, 442]),
     },
     winSize: 132, winFrom: -160,
     // centred, above Mia's chip
-    winPos: (W, H, sz, top, chip) => [W / 2 - sz.w / 2, top.y - chip.h - 12 * 1.25 - 40 - sz.h],
+    winPos: (W, H, sz, top, chip) => [W / 2 - sz.w / 2, top.y - chip.h - 12 * 1.25 - 110 - sz.h],
     s07Size: 220, s07Pos: (W, H, a, b) => [W / 2 - a.width / 2, 600, W / 2 - b.width / 2, 820],
   };
 }
