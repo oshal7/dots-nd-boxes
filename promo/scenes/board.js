@@ -37,7 +37,7 @@ const T_SW0 = 2.04, T_SW1 = 2.8;                   // paper → app sweep
 const T_TILT0 = 9.3, T_END = 10.0;
 const MOVE_T = [null, 4.25, 4.9, 5.75, 7.12, 7.36, 7.58, 7.77];
 const GROW = 0.12;                                            // chain: tap → stroke grows 120 ms → snap + fill   // moves 1..7 (move 0 is the pen stroke)
-const AUTO_T0 = 8.4, AUTO_DT = 0.075;                         // moves 8..21
+const AUTO_T0 = 8.4, AUTO_DT = 0.06;                         // moves 8..21
 const PREVIEW = { 1: 3.98, 2: 4.62, 3: 5.42 };                 // dashed preview start for the tapped moves
 
 export default {
@@ -68,14 +68,15 @@ export default {
         [5.65, [420, 1.5, 2.3], GLIDE],
         [6.7, [431, 1.5, 2.29], SINE],
         [7.0, [330, 2.54, 2.62], WHIP],
-        [8.4, [322, 2.56, 2.7], SINE],
+        [8.25, [322, 2.56, 2.7], SINE],
+        [8.6, [240, 2.0, 1.9], GLIDE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
       w1: { x: 64, y: 96, size: 176 }, w2: { r: 1016, y: 1650, size: 176 },
       head: { cx: 540, y1: 132, size: 150 },
       w3: { r: 1016, y: 176, size: 168 }, w4: { x: 64, y: 176, size: 168 },
       cardsW: 840, cardsW02: 840, cardsS02: (h, c) => ({ x: proj(P(0, 0), c).x, y: proj(P(0, 4), c).y + 42 }), cardsHud: (h) => ({ x: CB.x, y: H - 70 - h }), cardsFrom: 60,
-      pill: { c: 1.5, r: 3.5, dx: 0, dy: 0, scale: 4.0 },
+      pill: { c: 1.5, r: 3.5, dx: 0, dy: 0, scale: 2.35 },
       combo: (cam, pr) => ({ x: pr(P(2.96, 2)).x, y: pr(P(3, 1.5)).y }), comboSizes: [80, 92, 106, 118],
       penAngle: 21, penScale: 0.9, float1: 130, runSize: 74,
     } : {
@@ -90,14 +91,15 @@ export default {
         [5.65, [420, 1.5, 2.5], GLIDE],
         [6.7, [432, 1.52, 2.48], SINE],
         [7.0, [330, 2.42, 2.64], WHIP],
-        [8.4, [322, 2.52, 2.68], SINE],
+        [8.25, [322, 2.52, 2.68], SINE],
+        [8.6, [232, 1.95, 1.75], GLIDE],
         [T_END, [CB.gap, FC[0], FC[1]], LAND],
       ],
       w1: { x: 292, y: 50, size: 180 }, w2: { r: 1776, y: 890, size: 180 },
       head: { x: 118, y1: 404, size: 150 },
       w3: { r: 1836, y: 886, size: 170 }, w4: { x: 84, y: 886, size: 170 },
       cardsW: 600, cardsW02: 760, cardsS02: (h, c) => ({ x: proj(P(2, 0), c).x - 380, y: proj(P(0, 0), c).y - 24 - h }), cardsHud: (h) => ({ x: 60, y: 46 }), cardsFrom: -60,
-      pill: { c: 2.0, r: 3.0, dx: 1, dy: 70, scale: 2.4 },
+      pill: { c: 2.5, r: 3.5, dx: 0, dy: 0, scale: 2.4 },
       combo: (cam, pr) => ({ x: pr(P(2.98, 3)).x, y: Math.max(pr(P(3, 2)).y - 130, 175) }), comboSizes: [68, 78, 88, 97],
       penAngle: 12.5, penScale: 1, float1: 130, runSize: 76,
     };
@@ -254,7 +256,8 @@ export default {
       if (plate) css(e, plate);
       const r = e.getBoundingClientRect(); return { e, w: r.width, h: r.height };
     };
-    const PLATE = { background: 'rgba(247,242,231,0.92)', borderRadius: '0.22em', padding: '0.02em 0.16em 0.06em', boxShadow: '0 0 0.22em 0.2em rgba(247,242,231,0.92)' };
+    const PLATE = { background: C.paper, borderRadius: '0.22em', padding: '0.02em 0.16em 0.06em', boxShadow: `0 0 0.18em 0.16em ${C.paper}` };
+    const PLATE_S = { background: C.paper, borderRadius: '0.2em', padding: '0 0.08em 0.04em', boxShadow: `0 0 0.1em 0.06em ${C.paper}` };
     const ACC = (s) => `<span style="color:${C.accentInk}">${s}</span>`;
     const w1 = mkWord(wordsL, 'Remember', L.w1.size), w2 = mkWord(wordsL, 'this game?', L.w2.size);
     const hd1 = mkWord(wordsL, 'Now in your', L.head.size, false), hd2 = mkWord(wordsL, ACC('browser.'), L.head.size, false);
@@ -276,20 +279,20 @@ export default {
     const HALO2 = `0 0 0.03em ${C.paper}, 0 0 0.07em ${C.paper}, 0 0 0.12em ${C.paper}, 0 0 0.2em ${C.paper}, 0 0 0.32em rgba(247,242,231,0.95), 0 0 0.5em rgba(247,242,231,0.8)`;
     const mkFloat = (text, size, color, style = 'plate') => { const e = div('float-text', hud, text);
       css(e, { position: 'absolute', left: 0, top: 0, fontSize: size + 'px', color, textShadow: 'none', visibility: 'hidden' });
-      if (style === 'plate') css(e, PLATE); else if (style === 'halo') e.style.textShadow = HALO2; else if (style === 'white') e.style.textShadow = '0 0.03em 0.08em rgba(20,40,90,0.35)';
+      if (style === 'plate') css(e, PLATE); else if (style === 'halo') { e.style.textShadow = HALO2; css(e, PLATE_S); } else if (style === 'white') e.style.textShadow = '0 0.03em 0.08em rgba(20,40,90,0.35)';
       return e; };
     const floats = [];
     // "+1" on every capture (main.js:584), solid accent-ink on a paper plate
     [3, 4, 5, 6, 7].forEach((mi) => {
       const bx = moves[mi].completed[0];
       // s04: accent-ink on paper beside the box; chain: white on the solid blue fill (4.98:1), in the box's upper-right corner
-      const anchor = mi === 3 ? () => P(2.45, 2.64) : () => { const q = bd.boxCenter(bx); return { x: q.x + 0.29 * G0, y: q.y - 0.29 * G0 }; };
-      floats.push({ el: mi === 3 ? mkFloat(moves[mi].plusText, L.float1, C.accentInk, 'none') : mkFloat(moves[mi].plusText, L.float1 * 0.72, '#fff', 'white'), t0: moves[mi].t + (mi === 3 ? 0.04 : 0.1), life: mi === 3 ? 1.3 : 0.9, rise: mi === 3 ? 0.45 : 0.12,
+      const anchor = mi === 3 ? () => P(2.45, 2.64) : () => { const q = bd.boxCenter(bx); return { x: q.x + 0.33 * G0, y: q.y - 0.33 * G0 }; };
+      floats.push({ el: mi === 3 ? mkFloat(moves[mi].plusText, L.float1, C.accentInk, 'none') : mkFloat(moves[mi].plusText, L.float1 * 0.6, '#fff', 'white'), t0: moves[mi].t + (mi === 3 ? 0.04 : 0.1), life: mi === 3 ? 1.3 : 0.9, rise: mi === 3 ? 0.45 : 0.12,
         at: (t, c) => { const p = proj(anchor(), c); return { x: p.x, y: p.y, sc: c.s * G0 / 420 }; } });
     });
     // s05 chain combos: grow, shake, each replaced by the next in the same place
     [4, 5, 6, 7].forEach((mi, j) => {
-      const until = mi < 7 ? MOVE_T[mi + 1] : 8.55;
+      const until = mi < 7 ? MOVE_T[mi + 1] : 8.3;
       floats.push({ el: mkFloat(moves[mi].comboText, L.comboSizes[j], C.accentInk, 'halo'), t0: moves[mi].t, life: 9, until, last: mi === 7, step: true, shake: 10, rise: 0.2, at: (t, c) => ({ ...L.combo(c, (p) => proj(p, c)), sc: 1 }) });
     });
     const finger = div('', hud); css(finger, { position: 'absolute', left: 0, top: 0, width: '96px', height: '96px', borderRadius: '50%', background: 'rgba(56,53,47,0.16)', border: '4px solid rgba(255,255,255,0.95)', boxShadow: '0 10px 22px rgba(56,53,47,0.22), inset 0 0 0 2px rgba(56,53,47,0.08)' });
@@ -463,14 +466,20 @@ export default {
 
       // ---- player cards ----
       {
-        const on = t > 2.2 && t < 9.62; show(cardsWrap, on);
+        const on = t > 2.2 && t < 9.94; show(cardsWrap, on);
         if (on) {
-          const toHud = GLIDE(seg(t, 4.0, 4.5)), cs = lerp(cardsS02, cardsS, toHud) * (V ? 1 : lerp(1, 0.62, GLIDE(seg(t, 8.4, 8.9))));
+          const toHud = GLIDE(seg(t, 4.0, 4.5)), toCol = V ? 0 : (t < 6.93 ? 0 : 1);   // 16:9: exit up during the whip, re-enter from the right as a column
+          const colS = 1.75, colX = W - 40 - 170 * colS, colY = H / 2 - (2 * cardsNat.h + 12) * colS / 2;   // 16:9: stacked at the right, off the board
+          const cs = lerp(lerp(cardsS02, cardsS, toHud), colS, toCol);
           const pS = L.cardsS02(cardsNat.h * cardsS02, cam(Math.min(t, 4.0))), pH = L.cardsHud(cardsH);
-          const x = lerp(pS.x, pH.x, toHud) - (V ? 0 : 20 * GLIDE(seg(t, 8.4, 8.9))), y = lerp(pS.y, pH.y, toHud) - (V ? 0 : 12 * GLIDE(seg(t, 8.4, 8.9)));
-          const fade = 1 - smooth(seg(t, 9.3, 9.6));
+          const x = lerp(lerp(pS.x, pH.x, toHud), colX, toCol) + (V ? 0 : 420 * (1 - outCubic(seg(t, 6.93, 7.3))) * toCol), y = lerp(lerp(pS.y, pH.y, toHud), colY, toCol) - (V ? 0 : 260 * inCubic(seg(t, 6.72, 6.93)) * (1 - toCol));
+          const fade = 1 - smooth(seg(t, 9.8, 9.93));
           css(cardsWrap, { transform: `translate(${x}px,${y}px) scale(${cs})`, opacity: fade });
-          [mia, leo].forEach((cd, i) => { const a = outCubic(seg(t, 2.24 + i * 0.08, 2.7 + i * 0.08)); css(cd.el, { transform: `translateY(${(1 - a) * L.cardsFrom}px)`, opacity: clamp(a * 1.6) }); });
+          const tWin = moves.at(-1).t, flash = pop(t, tWin);
+          [mia, leo].forEach((cd, i) => { const a = outCubic(seg(t, 2.24 + i * 0.08, 2.7 + i * 0.08));
+            const lx = i === 1 ? -182 * toCol : 0, ly = i === 1 ? (cardsNat.h + 12) * toCol : 0, fs = i === 0 ? lerp(1, flash, 0.6) : 1;
+            css(cd.el, { transform: `translate(${lx}px,${ly + (1 - a) * L.cardsFrom}px) scale(${fs})`, transformOrigin: '50% 50%', opacity: clamp(a * 1.6),
+              boxShadow: i === 0 && t >= tWin ? `3px 4px 0 color-mix(in srgb, ${C.p1} 35%, transparent), 0 0 ${18 * (1 - seg(t, tWin, tWin + 0.6))}px ${6 * (1 - seg(t, tWin, tWin + 0.6))}px rgba(47,107,216,${0.5 * (1 - seg(t, tWin, tWin + 0.6))})` : '' }); });
           const st = stateAt(t);
           const sc = st ? st.scores : { p1: 0, p2: 0 };
           mia.setScore(sc.p1); leo.setScore(sc.p2);
