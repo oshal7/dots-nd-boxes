@@ -189,13 +189,15 @@ export function gamePage(screen, { players, board, id, boardH = null, footer = '
   wrap.style.height = B.h + 12 + 'px'; // board-wrap padding 6px (a compact phone: the board sits right under the cards)
   const pill = div('status-pill mx-pill', wrap, 'Bonus turn! 🔥');
   const fx = div('', wrap); css(fx, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', pointerEvents: 'none' });
+  const pfx = div('', p); css(pfx, { position: 'absolute', left: '0', top: '0', zIndex: 3 }); // page-level fx (taps)
   const bottom = div('mx-bottom', p);
   if (footer === 'emotes' || footer === 'both') { const em = div('mx-emotes', bottom); for (const e of ['👏', '😮', '🔥', '🏆', '😅']) { const s = document.createElement('span'); s.textContent = e; em.appendChild(s); } }
   if (footer === 'share' || footer === 'both') div('mx-sharemini', bottom, `Room: <b>${roomCode}</b>`);
-  return { page: p, cards, wrap, ...B, pill, fx };
+  return { page: p, cards, wrap, ...B, pill, fx, pfx };
 }
 
 /** Convert a board point (svg px) to a point in the wrap's fx layer. */
+export function boardToPage(g, pt) { const w = boardToWrap(g, pt); return { x: w.x + g.wrap.offsetLeft, y: w.y + g.wrap.offsetTop }; }
 export function boardToWrap(g, pt) {
   const wr = g.wrap; const W = wr.clientWidth, H = wr.clientHeight;
   return { x: (W - g.w) / 2 + pt.x, y: (H - g.h) / 2 + pt.y };
@@ -243,9 +245,9 @@ export function lobbyCreatePage(screen, code, scroll = 0) {
   return { page: p, card, letters, spin, box, fx };
 }
 
-export function lobbyJoinPage(screen) {
+export function lobbyJoinPage(screen, scroll = 0) {
   const p = page(screen); p.style.padding = '14px 12px';
-  const card = div('mx-card', p); card.style.padding = '20px 18px'; card.style.flex = 'none';
+  const card = div('mx-card', p); card.style.padding = '20px 18px'; card.style.flex = 'none'; card.style.marginTop = scroll + 'px';
   div('mx-back', card, '‹ Back');
   const tabs = div('mx-tabs', card); tabs.style.marginTop = '30px';
   div('mx-tab', tabs, 'Create Room'); div('mx-tab is-active', tabs, 'Join Room');
