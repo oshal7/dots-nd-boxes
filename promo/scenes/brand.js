@@ -38,6 +38,8 @@ export default {
   async build({ layer, W, H, V }) {
     const L = hand(V).L;
     const headT0 = V ? 26.5 : TM.head; // 9:16: the rising lockup crosses the headline's band, so it clears first
+    // 9:16: the pill and sub-line sit below the lockup's path, so they arrive first and fill the lower half during the move
+    const pillT = V ? [26.35, 26.85] : TM.pill, subT = V ? [26.5, 26.98] : TM.sub;
     const cam = div('', layer, '', { position: 'absolute', left: 0, top: 0, width: W + 'px', height: H + 'px' });
 
     // ---------- layout (all in film px) ----------
@@ -206,8 +208,8 @@ export default {
           const u = seg(t, TM.box[0], TM.box[1]);
           let sc, op;
           if (u <= 0) { sc = 0.4; op = 0; } else if (u < 0.5) { const q = inOutCubic(u / 0.5); sc = lerp(0.4, 1.08, q); op = lerp(0, 0.85, q); } else { const q = inOutCubic((u - 0.5) / 0.5); sc = lerp(1.08, 1, q); op = lerp(0.85, 0.75, q); }
-          const v = seg(t, TM.pulse, TM.pulse + 0.55);
-          if (v > 0 && v < 1) { sc *= v < 0.3 ? lerp(1, 1.1, outCubic(v / 0.3)) : lerp(1.1, 1, smooth((v - 0.3) / 0.7)); }
+          const v = seg(t, TM.pulse, TM.pulse + 0.75);
+          if (v > 0 && v < 1) { sc *= v < 0.35 ? lerp(1, 1.08, outCubic(v / 0.35)) : lerp(1.08, 1, smooth((v - 0.35) / 0.65)); }
           const dy = (dotDY(t, 3) + dotDY(t, 4) + dotDY(t, 6) + dotDY(t, 7)) / 4;
           box.setAttribute('transform', `translate(${BOX.cx} ${(BOX.cy + dy).toFixed(3)}) scale(${sc.toFixed(4)}) translate(${-BOX.cx} ${-BOX.cy})`);
           box.setAttribute('opacity', op.toFixed(3));
@@ -236,7 +238,7 @@ export default {
         });
         // URL pill scales in from 0.9 with a slight overshoot (back out), later lifts like the game's button hover
         {
-          const p = seg(t, TM.pill[0], TM.pill[1]);
+          const p = seg(t, pillT[0], pillT[1]);
           const sc = 0.9 + 0.1 * outBack(p, 1.7);
           const h = inOutCubic(seg(t, TM.hover[0], TM.hover[1]));
           pill.style.boxShadow = `${(3 + 2 * h) * k}px ${(3 + 2 * h) * k}px 0 rgba(56,53,47,${(0.16 + 0.03 * h).toFixed(3)})`;
@@ -246,7 +248,7 @@ export default {
           under.setAttribute('opacity', u > 0 ? 1 : 0);
         }
         {
-          const p = seg(t, TM.sub[0], TM.sub[1]);
+          const p = seg(t, subT[0], subT[1]);
           place(sub, LY.sub[0], LY.sub[1], subW, subH, 1, 1);
           subIn.style.transform = `translateY(${((1 - outExpoS(p)) * 120).toFixed(2)}%)`;
           subIn.style.visibility = p > 0 ? 'visible' : 'hidden';
